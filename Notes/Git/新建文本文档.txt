@@ -1,0 +1,17 @@
+https://gitee.com/help/articles/4107	码云
+https://edu.aliyun.com/course/489/learn#lesson/5393	阿里云
+
+
+
+初始化仓库	git init
+设置签名	
+	形式：用户名：xxx
+	          Email：xxxxxxxx
+	作用：区分不同开发人员的身份
+	命令：
+		项目级别(.git/config)
+		    git config user.name health	          	
+	          	    git config user.email health_x@163.com
+		用户级别(~/.gitconfig)
+	          	    git config --global user.name health	   
+		    git config --global user.email health_x@163.com 
