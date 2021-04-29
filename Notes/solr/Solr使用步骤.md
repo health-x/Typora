@@ -17,7 +17,7 @@ Solr：开源搜索平台，用于构建搜索应用。组件应用，企业级�
 4. 开放端口号：firewall  -cmd  --add-port=8983/tcp  --permanent
 5. 重启防火墙：firewall  -cmd --reload
 6. 在windows浏览器上访问：ip地址:8983
-7. 创建Solr集合命令：./solr  create  -c  collection1  -force（前提：solr是启动的、命令在bin目录执行）
+7. 创建Solr集合命令：./solr  create  -c  collection1  -force（前提：solr是启动的、命令在bin目录执行、collection1为集合名）
 
 
 
@@ -55,7 +55,7 @@ name：给字段取名，type：该字段的类型，indexed：是否允许索�
 <field name="item_updatetime" type="pdate" indexed="true" stored="true"/>
 ```
 
-**2.复制域**
+**2.复制域**（将某一个域中的数据复制到另一个域中）
 
 multiValued：是否允许多选，多值同时搜索，source：要复制的字段
 ```
