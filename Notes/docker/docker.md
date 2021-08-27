@@ -305,3 +305,79 @@ docker commit -m="我的tomcat" -a="health" 容器ID tomcatMe:11.0		# 提交镜�
 docker images		# 此时可以看到刚刚提交的tomcatMe镜像
 docker run -it tomcatMe:11.0 /bin/bash		# 用刚才创建的镜像新建容器
 ```
+
+
+
+
+
+## 容器数据卷
+
+介绍：将容器中的某个目录与主机的某个目录进行同步映射
+
+1. 此时添加文件到容器中该目录下，主机对应的目录也会拥有该文件。反之也成立。
+
+2. 即使在容器关闭后，修改主机目录下的文件，启动容器后容器内对应目录下的文件也会同步发生变化
+3. 即使是删除容器，主机对应的挂载目录数据也依旧存在
+
+### 使用数据卷
+
+```shell
+docker run it -v 主机目录:容器内目录		# 使用命令来挂载(数据同步)
+
+# 小示例
+docker run -it -v /home/ceshi:/home  centos /bin/bash	# 创建启动centos容器，并挂载/home目录到主机/home/ceshi
+[root@7fe6f4a01387 /]# cd /home			# 切到/home下
+[root@7fe6f4a01387 home]# mkdir aaa		# 创建aaa文件夹
+[root@7fe6f4a01387 home]# exit			# 退出容器
+[root@healthSH ~]# cd /home/ceshi/		# 切到/home/ceshi目录下
+[root@healthSH ceshi]# ll				#查看目录下内容（此时目录下已经有aaa了）
+```
+
+### 实例：MySQL同步数据
+
+```shell
+docker search mysql		# 搜索镜像，确定其可用
+docker pull mysql:5.7	# 拉取镜像
+# 运行容器，并挂载容器多个路径到主机路径(创建mysql容器需要设置密码)（-d:后台运行  -p:端口映射  -v:卷挂载  -e:环境(密码)配置）  --name:容器名字
+docker run -d -p 3310:3306 -v /home/mysql/conf:/etc/mysql/conf.d -v /home/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=root --name mysql01 mysql:5.7
+
+#启动成功后可以在本地使用Navicate连接测试
+```
+
+### 匿名和具名挂载
+
+```shell
+# 匿名挂载 (-v 容器内路径，没有写容器外路径)
+docker run -d -P --name nginx01 -v /etc/nginx nginx
+# 查看 volume(卷) 的情况
+docker volume ls
+
+# 具名挂载 (-v 卷名:容器内路径)
+docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx nginx
+docker volume ls				# 查看 volume(卷) 的情况
+docker volume inspect juming-nginx		# 查看一下这个卷
+
+所有docker容器内的卷，没有指定目录的情况下都是在 `/var/lib/docker/volumes/卷名/_data `
+多数情况下使用具名挂载
+```
+
+#### 拓展设定读写权限：
+
+```bash
+# 通过 -v 容器内路径:ro/rw		改变读写权限
+ro		readonly	# 只读（挂载的数据只能从外部host主机改变，容器内部无权限）
+rw		readwrite	# 可读写（默认）
+docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:ro nginx
+docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:rw nginx
+```
+
+# Dockerfile
+
+Dockerfile 就是用来构建docker镜像的构建文件！
+
+
+
+
+
+
+
