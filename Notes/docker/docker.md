@@ -204,9 +204,7 @@ docker status
 
 ## 小结图例
 
-![image-20210827173129646](C:\Users\xiaoxi\AppData\Roaming\Typora\typora-user-images\image-20210827173129646.png)
-
-
+<img src="../../assets/image-20210827173129646.png"/>
 
 ## 实例演示
 
@@ -230,11 +228,7 @@ docker exec -it nginx01 /bin/bash	# 进入容器
 
 -p 端口暴漏图解
 
-![image-20210827175614261](C:\Users\xiaoxi\AppData\Roaming\Typora\typora-user-images\image-20210827175614261.png)
-
-
-
-
+<img src="../../assets/image-20210827175614261.png"/>
 
 ### 2. 部署tomcat
 
