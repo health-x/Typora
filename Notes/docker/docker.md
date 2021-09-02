@@ -86,9 +86,25 @@ docker pull mysql:5.7
 #### 4. docker rmi	//删除镜像
 
 ```shell
-docker rmi -f [镜像ID]|[镜像名]		#指定删除镜像
+docker rmi -f [镜像ID]|[镜像名:TAG]		#指定删除镜像
 docker rmi -f $(docker images -aq)	#批量删除全部镜像
 ```
+
+#### 5. docker save	//导出镜像到磁盘
+
+```shell
+docker save -o 导出到那个文件 镜像名:tag [可多个镜像，空格分隔]
+docker save -o nginx.tar nginx:latest
+```
+
+#### 6. docker load	//导入镜像
+
+```shell
+docker load -i tar文件
+docker load -i nginx.tar
+```
+
+#### 7. docker
 
 
 
@@ -151,6 +167,8 @@ docker ps -a -q|xargs docker rm		#删除所有容器
 
 ```shell
 docker start 容器ID	# 启动容器
+docker pause 容器ID	# 暂停容器
+docker unpause 容器ID	# 恢复暂停的容器
 docker restart 容器ID	# 重启容器
 docker stop 容器ID	# 停止当前正在运行的容器
 docker kill 容器ID	# 强制停止容器（杀死ta）
@@ -162,6 +180,9 @@ docker run -d centos	# 后台启动容器（不进去），如果容器里面没
 ```shell
 docker exec -it 容器ID /bin/bash	# 进入正在运行的容器，开启一个新的终端，可以在里面操作（常用）
 docker attach 容器ID		# 进入正在运行的容器，进的是正在执行的终端，不会启动新的进程
+
+修改容器内文本内容(在容器中执行)
+sed -i 's#welcome#哈哈哈#g' index.html	# 将index.html文件的welcome修改为 哈哈哈
 ```
 
 #### 7. 拷贝容器内文件到主机上
@@ -173,7 +194,7 @@ docker cp 容器ID:/home/test.java /home	# 拷贝容器内的/home/test.java到�
 
 
 
-## 其他常用命令
+## 容器其他常用命令
 
 #### 1. 查看日志
 
@@ -309,17 +330,33 @@ docker run -it tomcatMe:11.0 /bin/bash		# 用刚才创建的镜像新建容器
 介绍：将容器中的某个目录与主机的某个目录进行同步映射
 
 1. 此时添加文件到容器中该目录下，主机对应的目录也会拥有该文件。反之也成立。
-
 2. 即使在容器关闭后，修改主机目录下的文件，启动容器后容器内对应目录下的文件也会同步发生变化
 3. 即使是删除容器，主机对应的挂载目录数据也依旧存在
+
+### 数据卷基本操作
+
+```shell
+docker volume [command]
+                create 卷名	# 创建一个volume
+                inspect	卷名	# 显示一个或多个volume详细信息
+                ls			# 列出所有的volume
+                prune		# 删除未使用的volume
+                rm 卷名		# 删除在指定的一个或多个volume
+```
 
 ### 使用数据卷
 
 ```shell
-docker run it -v 主机目录:容器内目录		# 使用命令来挂载(数据同步)
+docker run it -v 主机目录:容器内目录		# 使用命令来挂载(数据同步)，-it 直接进入容器
 
 # 小示例
 docker run -it -v /home/ceshi:/home  centos /bin/bash	# 创建启动centos容器，并挂载/home目录到主机/home/ceshi
+
+# 参数
+-v 容器内目录:主机目录	
+-it      # 使用交互方式运行（即启动并进入容器）
+-d		# 后台运行
+
 [root@7fe6f4a01387 /]# cd /home			# 切到/home下
 [root@7fe6f4a01387 home]# mkdir aaa		# 创建aaa文件夹
 [root@7fe6f4a01387 home]# exit			# 退出容器
@@ -333,7 +370,12 @@ docker run -it -v /home/ceshi:/home  centos /bin/bash	# 创建启动centos容器
 docker search mysql		# 搜索镜像，确定其可用
 docker pull mysql:5.7	# 拉取镜像
 # 运行容器，并挂载容器多个路径到主机路径(创建mysql容器需要设置密码)（-d:后台运行  -p:端口映射  -v:卷挂载  -e:环境(密码)配置）  --name:容器名字
-docker run -d -p 3310:3306 -v /home/mysql/conf:/etc/mysql/conf.d -v /home/mysql/data:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=root --name mysql01 mysql:5.7
+
+docker run -d 
+-p 3310:3306 
+-v /home/mysql/conf:/etc/mysql/conf.d -v /home/mysql/data:/var/lib/mysql 
+-e MYSQL_ROOT_PASSWORD=root 
+--name mysql01 mysql:5.7
 
 #启动成功后可以在本地使用Navicate连接测试
 ```
@@ -365,13 +407,21 @@ docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:ro nginx
 docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:rw nginx
 ```
 
+
+
+
+
+
+
+
+
 # Dockerfile
 
-Dockerfile 就是用来构建docker镜像的构建文件！
+Dockerfile 就是用来构建docker镜像的构建文件！其中包含一个个指令，用指令来说明要执行什么操作来构建镜像，每一个指令都会形成一层Layer。
 
+![image-20210731180321133](../../assets/image-20210731180321133.png)
 
-
-
+更新详细语法说明，请参考官网文档： https://docs.docker.com/engine/reference/builder
 
 
 
