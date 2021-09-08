@@ -1,6 +1,4 @@
-# Docker常用命令
-
-## 帮助命令
+# 一、帮助命令
 
 ```shell
 docker version		#查看docker的版本信息
@@ -10,7 +8,7 @@ docker 命令 --help	#帮助命令(可查看可选的参数)
 
 docker帮助文档地址:https://docs.docker.com/engine/reference/commandline/docker/
 
-## 镜像命令
+# 二、镜像命令
 
 #### 1. docker images 	//查看所有本地镜像
 
@@ -104,11 +102,7 @@ docker load -i tar文件
 docker load -i nginx.tar
 ```
 
-#### 7. docker
-
-
-
-## 容器命令
+# 三、容器命令
 
 #### 1. docker run	//新建容器并启动
 
@@ -192,44 +186,34 @@ docker cp 容器ID:容器内路径 目的主机路径
 docker cp 容器ID:/home/test.java /home	# 拷贝容器内的/home/test.java到主机的/home目录中（命令在主机执行的）
 ```
 
-
-
-## 容器其他常用命令
-
-#### 1. 查看日志
+#### 8. 查看容器日志
 
 ```shell
 docker logs -tf 容器ID	#显示日志（f：格式化显示）
 docker logs --tail number 容器id #num为要显示的日志条数
 ```
 
-#### 2. 查看容器中的进程信息
+#### 9. 查看容器中的进程信息
 
 ```shell
 docker top 容器ID		#查看容器内部的进程信息
 ```
 
-#### 3. 查看容器的元数据
+#### 10. 查看容器的详细数据
 
 ```shell
 docker inspect 容器ID
 ```
 
-#### 4.查看各个容器cpu状态
+#### 11.查看各个容器cpu状态
 
 ```shell
 docker status
 ```
 
+# 四、实例演示
 
-
-## 小结图例
-
-<img src="../../assets/image-20210827173129646.png"/>
-
-## 实例演示
-
-### 1. 部署Nginx
+## 1. 部署Nginx
 
 查看nginx镜像：https://hub.docker.com/
 
@@ -251,7 +235,7 @@ docker exec -it nginx01 /bin/bash	# 进入容器
 
 <img src="../../assets/image-20210827175614261.png"/>
 
-### 2. 部署tomcat
+## 2. 部署tomcat
 
 ```shell
 docker pull tomcat:9.0		# 下载镜像
@@ -265,29 +249,7 @@ docker exec -it tomcat9.0 /bin/bash		# 进入tomcat
 # 解决：tomcat容器的话 webapps.dist中有webapps应该有的东西，可以移过去或重命名
 ```
 
-
-
-### 3. 部署 es+kibana
-
-```shell
-# es暴漏的端口多
-# es十分耗内存
-# es的数据一般放置在安全目录！挂载
-# --net somenetwork ？ 网络配置
-
-docker run -d --name elasticsearch -p:9200:9200 -p:9300:9300 -e "discovery.type=single-node" elasticsearch:7.6.2		# 启动es
-
-curl localhost:9200			#测试
-
-# 设置内存限制启动，修改配置文件 -e 环境配置修改
-docker run -d --name elasticsearch -p:9200:9200 -p:9300:9300 -e "discovery.type=single-node" ES_JAVA_OPPTS="-Xms64m -Xmx512m" elasticsearch:7.6.2
-
-curl localhost:9200		#测试
-```
-
-
-
-##  图形化管理工具Portaniner安装
+##  3. 图形化管理工具Portaniner安装
 
 ```shell
 docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer	# 安装
@@ -301,31 +263,146 @@ curl localhost:8088		# 测试
 
 
 
-## Commit镜像
+## 4. 安装es
 
-```shell
-docker commit		# 提交容器成为一个新的副本
+因为我们还需要部署kibana容器，因此需要让es和kibana容器互联。这里先创建一个网络：
 
-# 命令类似于git
-docker commit -m="描述信息" -a="作者" 容器ID 自定义镜像名:[TAG] 		# 提交容器成为一个新的副本，tag一般为版本号
+4.1 创建网络
+
+```bash
+docker network create es-net	# 网络名称为es-net（自定义）
 ```
 
-#### commit 实例
+4.2 安装es镜像容器
+
+```bash
+docker run -d \
+    --name es \
+    -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+    -e "discovery.type=single-node" \
+    -v es-data:/usr/share/elasticsearch/data \
+    -v es-plugins:/usr/share/elasticsearch/plugins \
+    --privileged \
+    --network es-net \
+    -p 9200:9200 \
+    -p 9300:9300 \
+    elasticsearch:7.12.1
+    
+curl localhost:9200		#测试
+```
+
+命令解释：
+
+- `-e "cluster.name=es-docker-cluster"`：设置集群名称
+- `-e "http.host=0.0.0.0"`：监听的地址，可以外网访问
+- `-e "ES_JAVA_OPTS=-Xms512m -Xmx512m"`：内存大小
+- `-e "discovery.type=single-node"`：非集群模式
+- `-v es-data:/usr/share/elasticsearch/data`：挂载逻辑卷，绑定es的数据目录
+- `-v es-logs:/usr/share/elasticsearch/logs`：挂载逻辑卷，绑定es的日志目录
+- `-v es-plugins:/usr/share/elasticsearch/plugins`：挂载逻辑卷，绑定es的插件目录
+- `--privileged`：授予逻辑卷访问权
+- `--network es-net` ：加入一个名为es-net的网络中
+- `-p 9200:9200`：端口映射配置
+
+在浏览器中输入：http://主机地址:9200 即可看到elasticsearch的响应结果。
+
+
+
+## 5. 安装Kibana
+
+kibana可以给我们提供一个elasticsearch的可视化界面，便于我们学习。
+
+安装镜像容器命令：
 
 ```shell
-docker run -d tomcat9.0 -p:8080:8080 --name	tomcat01	# 创建、启动容器
-# 进入容器并对此进行修改
-docker ps		# 拿到容器ID
-docker commit -m="我的tomcat" -a="health" 容器ID tomcatMe:11.0		# 提交镜像
-docker images		# 此时可以看到刚刚提交的tomcatMe镜像
-docker run -it tomcatMe:11.0 /bin/bash		# 用刚才创建的镜像新建容器
+docker run -d \
+    --name kibana \
+    -e ELASTICSEARCH_HOSTS=http://es:9200 \
+    --network=es-net \
+    -p 5601:5601  \
+    kibana:7.12.1
+```
+
+- `--network es-net` ：加入一个名为es-net的网络中，与elasticsearch在同一个网络中
+- `-e ELASTICSEARCH_HOSTS=http://es:9200"`：设置elasticsearch的地址，因为kibana已经与elasticsearch在一个网络，因此可以用容器名直接访问elasticsearch
+- `-p 5601:5601`：端口映射配置
+
+在浏览器输入地址访问：http://主机地址:5601，即可看到结果
+
+
+
+## 6. 安装elasticsearch-head插件
+
+```shell
+docker pull mobz/elasticsearch-head:5
+docker run -d -p 9100:9100 docker.io/mobz/elasticsearch-head:5
+```
+
+在浏览器访问http://47.100.81.153:9100/，然后在连接框输入es地址：http://47.100.81.153:9200/
+
+此时应该连不上，然后配置下跨域访问即可
+
+步骤：
+
+```shell
+docker ps -a	# 查看es的容器id
+docker exec -it es容器id /bin/bash	# 进入es容器
+cd ./config
+vi elasticsearch.yml	# 打开es配置文件
+
+在配置文件下添加下面两行：
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+
+退出容器重启es即可
+```
+
+此时在图形化界面访问索引数据还是会显示不出来，此时再做如下配置：
+
+```bash
+docker exec -it head插件容器id /bin/bash	# 进入head插件的安装目录
+cd _site
+vim vendor.js
+打开后使用全局搜索找到两处application/x-www-form-urlencoded 改为 application/json;charset=UTF-8
+重启head容器，此时在数据浏览界面就能看到数据了。
 ```
 
 
 
+```shell
+容器内安装 vim 步骤：
+apt-get update
+apt-get install vim
+```
 
 
-## 容器数据卷
+
+## 7. Docker安装ik分词器
+
+7.1在线安装
+
+```shell
+# 进入容器内部
+docker exec -it es容器id /bin/bash
+
+# 在线下载并安装
+./bin/elasticsearch-plugin  install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.12.1/elasticsearch-analysis-ik-7.12.1.zip
+
+#退出
+exit
+#重启容器
+docker restart elasticsearch
+```
+
+IK分词器包含两种模式：
+
+* `ik_smart`：最少切分
+
+* `ik_max_word`：最细切分
+
+
+
+# 五、容器数据卷
 
 介绍：将容器中的某个目录与主机的某个目录进行同步映射
 
@@ -409,19 +486,265 @@ docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:rw nginx
 
 
 
+# 六、容器镜像转换
+
+## 1. 容器转镜像
+
+```shell
+docker commit [OPTIONS] CONTAINER [REPOSITORY[:TAG]]		# 提交容器成为一个新的副本
+
+# 命令类似于git
+docker commit [-m="描述信息"] [-a="作者"] 容器ID 自定义镜像名:[TAG] 		# 提交容器成为一个新的副本，tag一般为版本号
+
+
+# 创建tomcat镜像示例
+docker commit -m="我的自定义tomcat" -a="health" 容器ID tomcatMe:11.0		# 创建镜像
+docker images		# 此时可以看到刚刚创建的镜像
+docker run -it tomcatMe:11.0 /bin/bash		# 也可以用刚才创建的镜像新建容器
+```
 
 
 
+## 2. 镜像转压缩文件
+
+```shell
+docker save -o 自定义压缩文件名称 镜像名称:[TAG]
+
+# 示例，将tomcatMe:11.0镜像转为压缩文件
+docker save -o myTomcat.tar tomcatMe:11.0
+```
 
 
 
-# Dockerfile
+## 3. 压缩文件还原为镜像
+
+```shell
+docker load -i 压缩文件路径
+
+# 示例 将上面创建的myTomcat.tar还原为镜像
+docker load -i myTomcat.tar
+```
+
+# 七、Dockerfile
+
+## 1. 指令及概述
 
 Dockerfile 就是用来构建docker镜像的构建文件！其中包含一个个指令，用指令来说明要执行什么操作来构建镜像，每一个指令都会形成一层Layer。
 
 ![image-20210731180321133](../../assets/image-20210731180321133.png)
 
+| 关键字      | 作用                     | 备注                                                         |
+| ----------- | ------------------------ | ------------------------------------------------------------ |
+| FROM        | 指定父镜像               | 指定dockerfile基于那个image构建                              |
+| MAINTAINER  | 作者信息                 | 用来标明这个dockerfile谁写的                                 |
+| LABEL       | 标签                     | 用来标明dockerfile的标签 可以使用Label代替Maintainer 最终都是在docker image基本信息中可以查看 |
+| RUN         | 执行命令                 | 执行一段命令 默认是/bin/sh 格式: RUN command 或者 RUN ["command" , "param1","param2"] |
+| CMD         | 容器启动命令             | 提供启动容器时候的默认命令 和ENTRYPOINT配合使用.格式 CMD command param1 param2 或者 CMD ["command" , "param1","param2"] |
+| ENTRYPOINT  | 入口                     | 一般在制作一些执行就关闭的容器中会使用                       |
+| COPY        | 复制文件                 | build的时候复制文件到image中                                 |
+| ADD         | 添加文件                 | build的时候添加文件到image中 不仅仅局限于当前build上下文 可以来源于远程服务 |
+| ENV         | 环境变量                 | 指定build时候的环境变量 可以在启动的容器的时候 通过-e覆盖 格式ENV name=value |
+| ARG         | 构建参数                 | 构建参数 只在构建的时候使用的参数 如果有ENV 那么ENV的相同名字的值始终覆盖arg的参数 |
+| VOLUME      | 定义外部可以挂载的数据卷 | 指定build的image那些目录可以启动的时候挂载到文件系统中 启动容器的时候使用 -v 绑定 格式 VOLUME ["目录"] |
+| EXPOSE      | 暴露端口                 | 定义容器运行的时候监听的端口 启动容器的使用-p来绑定暴露端口 格式: EXPOSE 8080 或者 EXPOSE 8080/udp |
+| WORKDIR     | 工作目录                 | 指定容器内部的工作目录 如果没有创建则自动创建 如果指定/ 使用的是绝对地址 如果不是/开头那么是在上一条workdir的路径的相对路径 |
+| USER        | 指定执行用户             | 指定build或者启动的时候 用户 在RUN CMD ENTRYPONT执行的时候的用户 |
+| HEALTHCHECK | 健康检查                 | 指定监测当前容器的健康监测的命令 基本上没用 因为很多时候 应用本身有健康监测机制 |
+| ONBUILD     | 触发器                   | 当存在ONBUILD关键字的镜像作为基础镜像的时候 当执行FROM完成之后 会执行 ONBUILD的命令 但是不影响当前镜像 用处也不怎么大 |
+| STOPSIGNAL  | 发送信号量到宿主机       | 该STOPSIGNAL指令设置将发送到容器的系统调用信号以退出。       |
+| SHELL       | 指定执行脚本的shell      | 指定RUN CMD ENTRYPOINT 执行命令的时候 使用的shell            |
+
 更新详细语法说明，请参考官网文档： https://docs.docker.com/engine/reference/builder
+
+
+
+```shell
+# 通过dockerfile构建镜像
+docker build -f dockerfile文件路径 -t 镜像名称:版本 
+```
+
+
+
+## 2. 自定义centos7镜像
+
+```shell
+# 默认登陆路径/usr，可以使用vim
+vim centos_dockerfile	# 创建文件并进入
+
+# 文件内容
+FROM centos:7						  # 选择父镜像，没有的话会自动下载
+MAINTAINER health<health_x@163.com>		# 作者信息
+RUN yum install -y vim				   # 安装vim
+WORKDIR /usr						  # 指定默认·工作目录
+cmd /bin/bash						  # 定义容器启动执行的命令
+:wq									 # 保存退出
+
+docker build -f ./centos_dockerfile -t mycentos:1 .		# 镜像构建 -f指定dockerfile文件路径，-t设置新的镜像名和版本 ， . 代表路径
+```
+
+## 3. dockerfile案例
+
+定义dockerfile，发布springboot项目
+
+```shell
+vim springboot_dockerfile	            # 创建文件并进入
+
+FROM JAVA:8							  # 定义父镜像
+MAINTAINER health<health_x@163.com>		# 作者信息
+ADD demo01-0.0.1-SNAPSHOT.jar app.jar	# 将jar包添加到容器
+CMD java -jar app.jar				   # 定义容器启动执行的命令
+:wq									 # 保存退出
+
+docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建
+```
+
+
+
+
+
+# 八、Docker Compose
+
+## 1. 安装Docker Compose
+
+```shell
+# Compose目前已经完全支持Linux、Mac OS和Windows，在我们安装Compose之前，需要先安装Docker。下面我们以编译好的二进制包方式安装在Linux系统中。 
+curl -L https://github.com/docker/compose/releases/download/1.22.0/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+# 设置文件可执行权限 
+chmod +x /usr/local/bin/docker-compose
+# 查看版本信息 
+docker-compose -version
+```
+
+## 2. 卸载Docker Compose
+
+```shell
+# 二进制包方式安装的，删除二进制文件即可
+rm /usr/local/bin/docker-compose
+```
+
+
+
+## 3. 使用docker compose编排nginx+springboot项目
+
+1. 创建docker-compose目录
+
+```shell
+mkdir ~/docker-compose
+cd ~/docker-compose
+```
+
+2. 编写 docker-compose.yml 文件
+
+```shell
+version: '3'
+services:
+  nginx:
+   image: nginx
+   ports:
+    - 80:80
+   links:
+    - app
+   volumes:
+    - ./nginx/conf.d:/etc/nginx/conf.d
+  app:
+    image: app
+    expose:
+      - "8080"
+```
+
+3. 创建./nginx/conf.d目录
+
+```shell
+mkdir -p ./nginx/conf.d
+```
+
+
+
+4. 在./nginx/conf.d目录下 编写itheima.conf文件
+
+```shell
+server {
+    listen 80;
+    access_log off;
+
+    location / {
+        proxy_pass http://app:8080;
+    }
+   
+}
+```
+
+5. 在~/docker-compose 目录下 使用docker-compose 启动容器
+
+```shell
+docker-compose up
+```
+
+6. 测试访问
+
+```shell
+http://192.168.149.135/hello
+```
+
+# 九、Docker私有仓库
+
+
+
+### 一、私有仓库搭建
+
+```shell
+# 1、拉取私有仓库镜像 
+docker pull registry
+# 2、启动私有仓库容器 
+docker run -id --name=registry -p 5000:5000 registry
+# 3、打开浏览器 输入地址http://私有仓库服务器ip:5000/v2/_catalog，看到{"repositories":[]} 表示私有仓库 搭建成功
+# 4、修改daemon.json   
+vim /etc/docker/daemon.json    
+# 在上述文件中添加一个key，保存退出。此步用于让 docker 信任私有仓库地址；注意将私有仓库服务器ip修改为自己私有仓库服务器真实ip 
+{"insecure-registries": ["私有仓库服务器ip:5000"]} 
+# 5、重启docker 服务 
+systemctl restart docker
+docker start registry
+
+```
+
+### 二、将镜像上传至私有仓库
+
+```shell
+# 1、标记镜像为私有仓库的镜像     
+docker tag centos:7 私有仓库服务器IP:5000/centos:7
+ 
+# 2、上传标记的镜像     
+docker push 私有仓库服务器IP:5000/centos:7
+
+```
+
+
+
+### 三、 从私有仓库拉取镜像 
+
+```shell
+#拉取镜像 
+docker pull 私有仓库服务器ip:5000/centos:7
+```
+
+
+
+
+
+# 小结
+
+<img src="../../assets/image-20210827173129646.png"/>
+
+docker镜像原理
+
+```shell
+可写容器（container）
+镜像（tomcat）
+镜像（jdk）
+roofs基础镜像（centos/ubuntu）
+bootfs
+```
 
 
 
