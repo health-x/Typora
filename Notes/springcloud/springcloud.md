@@ -16,7 +16,7 @@ springboot用的是：2.3.9.RELEASE
 
 3.添加application.yml文件，编写如下配置
 
-```
+```yml
 server:
   port: 10086
 
