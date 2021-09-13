@@ -211,198 +211,7 @@ docker inspect 容器ID
 docker status
 ```
 
-# 四、实例演示
-
-## 1. 部署Nginx
-
-查看nginx镜像：https://hub.docker.com/
-
-```shell
-docker search nginx		# 搜索镜像（网站和命令都可以）
-docker pull nginx		# 下载镜像
-docker images		    # 查看镜像
-docker run -d --name nginx01 -p:3344:80	nginx		# -d:后台启动容器并且返回容器ID
-												# --name：为容器取名
-												# -p:暴漏到外部的端口号:自己的端口号（通过公网的3344可以访问到docker的80）
-												# nginx 镜像名
-docker ps				# 查看容器
-curl localhost:3344		 # 本机测试（上述命令都是在host上执行）
-
-docker exec -it nginx01 /bin/bash	# 进入容器
-```
-
--p 端口暴漏图解
-
-<img src="../../assets/image-20210827175614261.png"/>
-
-## 2. 部署tomcat
-
-```shell
-docker pull tomcat:9.0		# 下载镜像
-docker run -d tomcat9.0 -p:4444:8080 --name	tomcat	# 启动运行
-# 此时已经成功了，但访问会显示404
-
-docker exec -it tomcat9.0 /bin/bash		# 进入tomcat
-
-# 问题：1.linux命令少了 2.webapps里面没有东西
-# 原因：镜像是最小镜像，所有不必要的东西都剔除了，只保证最小可运行环境
-# 解决：tomcat容器的话 webapps.dist中有webapps应该有的东西，可以移过去或重命名
-```
-
-##  3. 图形化管理工具Portaniner安装
-
-```shell
-docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer	# 安装
-docker ps	# 查看容器
-curl localhost:8088		# 测试
-外网访问路径：http://47.100.81.153:8088/
-1.首次进入需设置admin的密码（也可以创建其他用户）
-2.选择Local进行连接进入
-3.一般不使用，自测玩玩即可
-```
-
-
-
-## 4. 安装es
-
-因为我们还需要部署kibana容器，因此需要让es和kibana容器互联。这里先创建一个网络：
-
-4.1 创建网络
-
-```bash
-docker network create es-net	# 网络名称为es-net（自定义）
-```
-
-4.2 安装es镜像容器
-
-```bash
-docker run -d \
-    --name es \
-    -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
-    -e "discovery.type=single-node" \
-    -v es-data:/usr/share/elasticsearch/data \
-    -v es-plugins:/usr/share/elasticsearch/plugins \
-    --privileged \
-    --network es-net \
-    -p 9200:9200 \
-    -p 9300:9300 \
-    elasticsearch:7.12.1
-    
-curl localhost:9200		#测试
-```
-
-命令解释：
-
-- `-e "cluster.name=es-docker-cluster"`：设置集群名称
-- `-e "http.host=0.0.0.0"`：监听的地址，可以外网访问
-- `-e "ES_JAVA_OPTS=-Xms512m -Xmx512m"`：内存大小
-- `-e "discovery.type=single-node"`：非集群模式
-- `-v es-data:/usr/share/elasticsearch/data`：挂载逻辑卷，绑定es的数据目录
-- `-v es-logs:/usr/share/elasticsearch/logs`：挂载逻辑卷，绑定es的日志目录
-- `-v es-plugins:/usr/share/elasticsearch/plugins`：挂载逻辑卷，绑定es的插件目录
-- `--privileged`：授予逻辑卷访问权
-- `--network es-net` ：加入一个名为es-net的网络中
-- `-p 9200:9200`：端口映射配置
-
-在浏览器中输入：http://主机地址:9200 即可看到elasticsearch的响应结果。
-
-
-
-## 5. 安装Kibana
-
-kibana可以给我们提供一个elasticsearch的可视化界面，便于我们学习。
-
-安装镜像容器命令：
-
-```shell
-docker run -d \
-    --name kibana \
-    -e ELASTICSEARCH_HOSTS=http://es:9200 \
-    --network=es-net \
-    -p 5601:5601  \
-    kibana:7.12.1
-```
-
-- `--network es-net` ：加入一个名为es-net的网络中，与elasticsearch在同一个网络中
-- `-e ELASTICSEARCH_HOSTS=http://es:9200"`：设置elasticsearch的地址，因为kibana已经与elasticsearch在一个网络，因此可以用容器名直接访问elasticsearch
-- `-p 5601:5601`：端口映射配置
-
-在浏览器输入地址访问：http://主机地址:5601，即可看到结果
-
-
-
-## 6. 安装elasticsearch-head插件
-
-```shell
-docker pull mobz/elasticsearch-head:5
-docker run -d -p 9100:9100 docker.io/mobz/elasticsearch-head:5
-```
-
-在浏览器访问http://47.100.81.153:9100/，然后在连接框输入es地址：http://47.100.81.153:9200/
-
-此时应该连不上，然后配置下跨域访问即可
-
-步骤：
-
-```shell
-docker ps -a	# 查看es的容器id
-docker exec -it es容器id /bin/bash	# 进入es容器
-cd ./config
-vi elasticsearch.yml	# 打开es配置文件
-
-在配置文件下添加下面两行：
-http.cors.enabled: true
-http.cors.allow-origin: "*"
-
-退出容器重启es即可
-```
-
-此时在图形化界面访问索引数据还是会显示不出来，此时再做如下配置：
-
-```bash
-docker exec -it head插件容器id /bin/bash	# 进入head插件的安装目录
-cd _site
-vim vendor.js
-打开后使用全局搜索找到两处application/x-www-form-urlencoded 改为 application/json;charset=UTF-8
-重启head容器，此时在数据浏览界面就能看到数据了。
-```
-
-
-
-```shell
-容器内安装 vim 步骤：
-apt-get update
-apt-get install vim
-```
-
-
-
-## 7. Docker安装ik分词器
-
-7.1在线安装
-
-```shell
-# 进入容器内部
-docker exec -it es容器id /bin/bash
-
-# 在线下载并安装
-./bin/elasticsearch-plugin  install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.12.1/elasticsearch-analysis-ik-7.12.1.zip
-
-#退出
-exit
-#重启容器
-docker restart elasticsearch
-```
-
-IK分词器包含两种模式：
-
-* `ik_smart`：最少切分
-
-* `ik_max_word`：最细切分
-
-
-
-# 五、容器数据卷
+# 四、容器数据卷
 
 介绍：将容器中的某个目录与主机的某个目录进行同步映射
 
@@ -424,7 +233,7 @@ docker volume [command]
 ### 使用数据卷
 
 ```shell
-docker run it -v 主机目录:容器内目录		# 使用命令来挂载(数据同步)，-it 直接进入容器
+docker run -it -v 主机目录:容器内目录		# 使用命令来挂载(数据同步)，-it 直接进入容器
 
 # 小示例
 docker run -it -v /home/ceshi:/home  centos /bin/bash	# 创建启动centos容器，并挂载/home目录到主机/home/ceshi
@@ -486,7 +295,7 @@ docker run -d -P --name nginx02 -v juming-nginx:/etc/nginx:rw nginx
 
 
 
-# 六、容器镜像转换
+# 五、容器镜像转换
 
 ## 1. 容器转镜像
 
@@ -525,7 +334,7 @@ docker load -i 压缩文件路径
 docker load -i myTomcat.tar
 ```
 
-# 七、Dockerfile
+# 六、Dockerfile
 
 ## 1. 指令及概述
 
@@ -602,7 +411,7 @@ docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建
 
 
 
-# 八、Docker Compose
+# 七、Docker Compose
 
 ## 1. 安装Docker Compose
 
@@ -686,7 +495,7 @@ docker-compose up
 http://192.168.149.135/hello
 ```
 
-# 九、Docker私有仓库
+# 八、Docker私有仓库
 
 
 
@@ -732,7 +541,7 @@ docker pull 私有仓库服务器ip:5000/centos:7
 
 
 
-# 小结
+# 九、小结
 
 <img src="../../assets/image-20210827173129646.png"/>
 
@@ -745,6 +554,234 @@ docker镜像原理
 roofs基础镜像（centos/ubuntu）
 bootfs
 ```
+
+
+
+
+
+# Ⅹ、实例演示
+
+## 1. 部署Nginx
+
+查看nginx镜像：https://hub.docker.com/
+
+```shell
+docker search nginx		# 搜索镜像（网站和命令都可以）
+docker pull nginx		# 下载镜像
+docker images		    # 查看镜像
+docker run -d --name nginx01 -p:3344:80	nginx		# -d:后台启动容器并且返回容器ID
+												# --name：为容器取名
+												# -p:暴漏到外部的端口号:自己的端口号（通过公网的3344可以访问到docker的80）
+												# nginx 镜像名
+docker ps				# 查看容器
+curl localhost:3344		 # 本机测试（上述命令都是在host上执行）
+
+docker exec -it nginx01 /bin/bash	# 进入容器
+```
+
+-p 端口暴漏图解
+
+<img src="../../assets/image-20210827175614261.png"/>
+
+## 2. 安装tomcat
+
+```shell
+方式一：
+docker pull tomcat:9.0		# 下载镜像
+docker run -d -p:8888:8080 --name tomcat tomcat:9.0	# 启动运行
+# 此时已经成功了，但访问会显示404
+
+docker exec -it tomcat9.0 /bin/bash		# 进入tomcat
+
+# 问题：1.linux命令少了 2.webapps里面没有东西
+# 原因：镜像是最小镜像，所有不必要的东西都剔除了，只保证最小可运行环境
+# 解决：tomcat容器的话 webapps.dist中有webapps应该有的东西，可以移过去或重命名
+
+方式二：
+docker run -d -p:8080:8080 \
+-v /home/dockerdata/tomcat8.5.70/webapps:/usr/local/tomcat/webapps \
+-v /home/dockerdata/tomcat8.5.70/conf:/usr/local/tomcat/conf \
+--name tomcat8.5.70 tomcat:8.5.70
+
+```
+
+##  3. 图形化管理工具Portaniner安装
+
+```shell
+docker run -d -p 8088:9000 --restart=always -v /var/run/docker.sock:/var/run/docker.sock --privileged=true portainer/portainer	# 安装
+docker ps	# 查看容器
+curl localhost:8088		# 测试
+外网访问路径：http://47.100.81.153:8088/
+1.首次进入需设置admin的密码（也可以创建其他用户）
+2.选择Local进行连接进入
+3.一般不使用，自测玩玩即可
+```
+
+
+
+## 4. 安装es
+
+因为我们还需要部署kibana容器，因此需要让es和kibana容器互联。这里先创建一个网络：
+
+4.1 创建网络
+
+```bash
+docker network create es-net	# 网络名称为es-net（自定义）
+```
+
+4.2 安装es镜像容器
+
+```bash
+docker run -d \
+    --name elasticsearch7.14.1 \
+    -e "ES_JAVA_OPTS=-Xms512m -Xmx512m" \
+    -e "discovery.type=single-node" \
+    -v es-data:/usr/share/elasticsearch/data \
+    -v es-plugins:/usr/share/elasticsearch/plugins \
+    --privileged \
+    --net es-net \
+    -p 9200:9200 \
+    -p 9300:9300 \
+    elasticsearch:7.14.1
+    
+curl localhost:9200		#测试
+```
+
+命令解释：
+
+- `-e "cluster.name=es-docker-cluster"`：设置集群名称
+- `-e "http.host=0.0.0.0"`：监听的地址，可以外网访问
+- `-e "ES_JAVA_OPTS=-Xms512m -Xmx512m"`：内存大小
+- `-e "discovery.type=single-node"`：非集群模式
+- `-v es-data:/usr/share/elasticsearch/data`：挂载逻辑卷，绑定es的数据目录
+- `-v es-logs:/usr/share/elasticsearch/logs`：挂载逻辑卷，绑定es的日志目录
+- `-v es-plugins:/usr/share/elasticsearch/plugins`：挂载逻辑卷，绑定es的插件目录
+- `--privileged`：授予逻辑卷访问权
+- `--network es-net` ：加入一个名为es-net的网络中
+- `-p 9200:9200`：端口映射配置
+
+在浏览器中输入：http://主机地址:9200 即可看到elasticsearch的响应结果。
+
+
+
+## 5. 安装Kibana
+
+kibana可以给我们提供一个elasticsearch的可视化界面，便于我们学习。
+
+安装镜像容器命令：
+
+```shell
+172.18.0.2
+docker inspect es容器ID |grep IPAddress	# 得到es容器的ip（填写在下面）
+
+docker run -d \
+    --name kibana \
+    -e ELASTICSEARCH_HOSTS=http://172.18.0.2:9200 \
+    --net=es-net \
+    -p 5601:5601  \
+    kibana:7.14.1
+    
+
+# 汉化（可选）
+在配置文件kibana.yml中添加：
+i18n.locale: "zh-CN"
+```
+
+- `--network es-net` ：加入一个名为es-net的网络中，与elasticsearch在同一个网络中
+- `-e ELASTICSEARCH_HOSTS=http://es:9200"`：设置elasticsearch的地址，因为kibana已经与elasticsearch在一个网络，因此可以用容器名直接访问elasticsearch
+- `-p 5601:5601`：端口映射配置
+
+在浏览器输入地址访问：http://主机地址:5601，即可看到结果
+
+
+
+## 6. 安装elasticsearch-head插件
+
+```shell
+docker pull mobz/elasticsearch-head:5
+docker run -d -p 9100:9100 docker.io/mobz/elasticsearch-head:5
+```
+
+在浏览器访问http://47.100.81.153:9100/，然后在连接框输入es地址：http://47.100.81.153:9200/
+
+此时应该连不上，然后配置下跨域访问即可
+
+步骤：
+
+```shell
+docker ps -a	# 查看es的容器id
+docker exec -it es容器id /bin/bash	# 进入es容器
+cd ./config
+vi elasticsearch.yml	# 打开es配置文件
+
+在配置文件下添加下面两行：
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+
+退出容器重启es即可
+```
+
+此时在图形化界面访问索引数据还是会显示不出来，此时再做如下配置：
+
+```bash
+docker exec -it head插件容器id /bin/bash	# 进入head插件的安装目录
+cd _site
+vim vendor.js
+打开后使用全局搜索找到两处application/x-www-form-urlencoded 改为 application/json;charset=UTF-8
+重启head容器，此时在数据浏览界面就能看到数据了。
+```
+
+
+
+```shell
+容器内安装 vim 步骤：
+apt-get update
+apt-get install vim
+```
+
+
+
+## 7. 安装ik分词器
+
+7.1在线安装
+
+```shell
+# 进入容器内部
+docker exec -it es容器id /bin/bash
+
+# 在线下载并安装
+./bin/elasticsearch-plugin  install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.14.1/elasticsearch-analysis-ik-7.14.1.zip
+
+#退出
+exit
+#重启容器
+docker restart elasticsearch
+```
+
+IK分词器包含两种模式：
+
+* `ik_smart`：最少切分
+
+* `ik_max_word`：最细切分
+
+
+
+## 8. 安装mysql
+
+```shell
+在host主机建立/home/dockerdata/mysql5.7/conf 和 /home/dockerdata/mysql5.7/data用于挂在mysql容器的数据
+
+docker pull mysql:5.7
+docker run -p:3306:3306 --name mysql5.7 \
+ -v /home/dockerdata/mysql5.7/conf/:/etc/mysql/conf.d \
+ -v /home/dockerdata/mysql5.7/data/:/var/lib/mysql \
+ -e MYSQL_ROOT_PASSWORD=liu0801 \
+ -e TZ=Asia/Shanghai \
+ -d mysql:5.7
+
+```
+
+
 
 
 
