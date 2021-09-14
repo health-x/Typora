@@ -769,9 +769,12 @@ IK分词器包含两种模式：
 ## 8. 安装mysql
 
 ```shell
-在host主机建立/home/dockerdata/mysql5.7/conf 和 /home/dockerdata/mysql5.7/data用于挂在mysql容器的数据
+1.在host主机建立/home/dockerdata/mysql5.7/conf 和 /home/dockerdata/mysql5.7/data用于挂在mysql容器的数据
 
+2.拉取镜像
 docker pull mysql:5.7
+
+3.安装启动容器
 docker run -p:3306:3306 --name mysql5.7 \
  -v /home/dockerdata/mysql5.7/conf/:/etc/mysql/conf.d \
  -v /home/dockerdata/mysql5.7/data/:/var/lib/mysql \
@@ -779,9 +782,43 @@ docker run -p:3306:3306 --name mysql5.7 \
  -e TZ=Asia/Shanghai \
  -d mysql:5.7
 
+4.进入mysql
+docker exec -it c07c8eabab12 mysql -uroot -p
+Enter password:
 ```
 
 
+
+## 9. 安装redis
+
+```bash
+1.在linux上新建文件夹用于数据挂载/home/redis6.2.5/data 和 /home/redis6.2.5/conf
+2.在官网下载redis压缩包，解压取出里面的redis.conf文件，放在/home/redis6.2.5/conf目录下
+3.修改redis.conf配置
+ - 注释掉 bind 127.0.0.1
+ - protected-mode no # 默认yes，开启保护模式，限制为本地访问，改为no
+ - daemonize no #默认no，无需修改，改为yes意为以守护进程方式启动，可后台运行，除非kill进程（可选），改为yes会使配置文件方式启动redis失败
+ - dir  ./ #输入本地redis数据库存放文件夹（可选）
+ - appendonly yes #redis持久化（可选）
+
+4.拉取镜像
+docker pull redis:6.2.5
+
+5.安装运行容器
+docker run -p 6379:6379 --name redis6.2.5 \
+-v /home/dockerdata/redis6.2.5/conf/redis.conf:/etc/redis/redis.conf \
+-v /home/dockerdata/redis6.2.5/data:/data \
+-d redis:6.2.5 redis-server /etc/redis/redis.conf --appendonly yes
+# 参数解释
+-p 6380:6380 端口映射：映射到主机的端口号:容器内redis暴漏的端口。
+-v 挂载目录，主机:容器
+redis-server /etc/redis/redis.conf  以配置文件启动redis，加载容器内的conf文件，最终找到的是挂载的目录/home/dockerdata/redis6.2.5/conf/redis.conf
+appendonly yes 开启redis 持久化
+
+6.进入redis
+docker exec -it redis容器ID /bin/bash		# 进入redis容器
+docker exec -it redis容器ID redis-cli		# 进入redis客户端
+```
 
 
 

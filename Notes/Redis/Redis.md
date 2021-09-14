@@ -64,7 +64,7 @@ chkconfig --list    查看所有开机自启项
 
 
 
-### 修改6379.conf为远程连接做准备
+### 修改 6379.conf 为远程连接做准备
 
 vim  /etc/redis/6379.conf，修改保护模式yes为no，注释127.0.0.1
 
@@ -185,12 +185,13 @@ redis-cli -h {主机名}  -p {端口号}  -a {密码}
 
 redis有五种数据类型，它们分别是：string（字符串）、hash（哈希）、list（列表）、set（集合）、zset（有序集合）
 
-### 一、全局命令
+## 一、全局命令
 
 - keys * ：查看所有的键（遍历所有键，时间复杂度是O（n））
 - dbsize ：返回键总和（直接获取Redis内置的键总数变量，时间复杂度是O（1））
 - exists key：检查键是否存在（键存在则返回1，不存在则返回0）
-- del key [key · · · ]：删除键（返回结果为成功删除键的个数）
+- del key [key · · · ]：直接删除（返回结果为成功删除键的个数）
+- unlink key：根据value选择非阻塞删除（真正删除可能会在后续异步操作）
 - expire key second：键过期（对键添加过期时间，超过过期时间后，会自动删除键）
 - ttl key：返回键的剩余过期时间，三种返回值如下
   1. 大于等于0的整数：键剩余的过期时间。
@@ -199,15 +200,17 @@ redis有五种数据类型，它们分别是：string（字符串）、hash（�
 - type key：键的数据结构类型
 - object encoding [key]：查询内部编码
 - setex：设置key对应的value的过期时间
+- select 库名：切换数据库（如select 15）
+- flushdb：清空当前库
+- flushall：清空所有库
 
-### 二、字符串
+## 二、字符串
 
-字符串类型是Redis最基础的数据结构。字符串类型的值实际可以
-是字符串（简单的字符串、复杂的字符串（例如JSON、XML））、数字（整数、浮点数），甚至是二进制（图片、音频、视频），但是值最大<font color=red>不能超过512MB</font>。
+字符串类型是Redis最基础的数据结构。字符串类型的值实际可以是字符串（简单的字符串、复杂的字符串（例如JSON、XML））、数字（整数、浮点数），甚至是二进制（图片、音频、视频），但是值最大<font color=red>不能超过512MB</font>。
 
-#### 常用命令
 
-##### 1. 设置值 set
+
+### 1. 设置值 set
 
 （1）set key value [ex seconds] [px milliseconds] [nx|xx]
 
@@ -218,24 +221,20 @@ redis有五种数据类型，它们分别是：string（字符串）、hash（�
 ·xx：与nx相反，键必须存在，才可以设置成功，用于更新
 ```
 
-
-
 （2）除了set选项，Redis还提供了setex和setnx两个命令：
 
-​	setnx（**SET** if **N**ot e**X**ists）：命令在指定的 key 不存在时，为 key 设置指定的值。
+setnx（set if Not exists）：命令在指定的 key 不存在时，为 key 设置指定的值。
 
 ​		格式：```setnx key value```
 
-​		示例：
-
-```
+```bash
 redis> EXISTS job                # job 不存在
 (integer) 0
 
-redis> SETNX job "programmer"    # job 设置成功返回1
+redis> setnx job "programmer"    # job 设置成功返回1
 (integer) 1
 
-redis> SETNX job "code-farmer"   # 尝试覆盖 job ，失败返回0
+redis> setnx job "code-farmer"   # 尝试覆盖 job ，失败返回0
 (integer) 0
 
 redis> GET job                   # 没有被覆盖
@@ -256,18 +255,15 @@ mset key value [key value ...]
 
 示例：mset a 1 b 2 c 3 d 4
 
-
-
-##### 2. 获取值 get
+### 2. 获取值 get
 
 - 单个获取：get key
-
 - 批量获取值：mget key [key ...]
   - 示例：mget a b c d
+- 获取范围内的值：getrange key 起始位置  结束位置
+- 设置新值同时获取旧值：getset key value
 
-
-
-##### 3.计数 incr
+### 3.计数 incr / decr
 
 incr 命令用于对值做自增操作，返回结果分为三种情况：
 
@@ -275,39 +271,37 @@ incr 命令用于对值做自增操作，返回结果分为三种情况：
 - 值是整数，返回自增后的结果。
 - 键不存在，按照值为0自增，返回结果为1。
 
-除了incr指令 ，Redis提供了decr（自减）、incrby（自增指定数字）、decrby（自减指定数字）、incrbyfloat（自增浮点数）：
+Redis还提供了incrby（自增指定数字）、decrby（自减指定数字）、incrbyfloat（自增浮点数）：
 
-```
+```bash
 decr key
-incrby key increment
-decrby key decrement
-incrbyfloat key increment
+incrby key increment	# 自增自定义步长
+decrby key decrement	# 自减自定义步长
+incrbyfloat key increment	# 自增自定义步长浮点数
 ```
 
-#### 不常用命令
-
-##### 1.追加值 
+### 4.追加值 
 
 append key value：append可以向字符串尾部追加值
 
-##### 2.字符串长度
+### 5.字符串长度
 
 strlen key：返回字符串的字节长度
 
 注意：每个中文占3个字节
 
-##### 3.设置并返回原值
+### 6.设置并返回原值
 
 getset key value：和set一样会设置值，但是不同的是，它同时会返回键原来的值
 
-##### 4.设置指定位置的字符
+### 7.设置指定位置的字符
 
 setrange key offeset value：
 
 - offeset：索引（从零开始计数）
 -  value：替换的值
 
-##### 5.获取部分字符串
+### 8.获取部分字符串
 
 getrange key start end：start和end分别是开始和结束的偏移量，偏移量从0开始计算（左右都取）
 
@@ -315,7 +309,7 @@ getrange key start end：start和end分别是开始和结束的偏移量，偏�
 
 <img src="../../assets/image-20210107132521027.png" alt="image-20210107132521027" style="zoom:80%;" />
 
-#### 内部编码
+### 内部编码
 
 字符串类型的内部编码有3种：
 
@@ -329,7 +323,7 @@ Redis会根据当前值的类型和长度决定使用哪种内部编码实现。
 
 
 
-### 三、哈希
+## 三、哈希
 
 在Redis中，哈希类型是指键值本身又是一个键值对结构，形如value={{field1，value1}，...{fieldN，valueN}}
 
@@ -396,7 +390,7 @@ hmget user1 name city		//获取
 
 
 
-### 四、列表
+## 四、列表
 
 特点
 
@@ -492,7 +486,7 @@ blpop命令会按照从左到右的顺序依次检查用户给定的列表，并
 
 
 
-### 五、集合
+## 五、集合
 
 集合（set）类型也是用来保存多个的字符串元素
 
@@ -562,7 +556,7 @@ sdiffstore  key  [key ...]
 
 
 
-### 六、有序集合
+## 六、有序集合
 
 有序集合（zset）中的元素可以排序，但是不能有重复成员
 
@@ -664,7 +658,7 @@ zremrangebyscore key min max
 
 
 
-### 七、键管理
+## 七、键管理
 
 #### 1.单个键管理
 
