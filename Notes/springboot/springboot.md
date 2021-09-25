@@ -1,4 +1,4 @@
-## 配置文件加载优先级
+## 一、配置文件加载优先级
 
 ### 1. 文件夹级别：
 
@@ -14,7 +14,7 @@
 
 
 
-## 读取配置文件内容
+## 二、读取配置文件内容
 
 ```java
 @Value("${person.name}")	//方法1：注解读取
@@ -36,7 +36,7 @@ private Person person;
 
 
 
-## Profile
+## 三、Profile
 
 ### 1) 介绍：
 
@@ -56,4 +56,3 @@ profiles是用来在不同环境下，动态切换不同配置功能的
 - 配置文件：在配置文件中配置：spring.profiles.active=dev
 - 虚拟机参数：在VM options指定：-Dspring.profiles.active=dev
 - 命令行参数：java -jar xxx.jar  --spring.profiles.active=dev
-
