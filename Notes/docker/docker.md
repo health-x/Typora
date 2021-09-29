@@ -349,7 +349,7 @@ Dockerfile 就是用来构建docker镜像的构建文件！其中包含一个个
 | LABEL       | 标签                     | 用来标明dockerfile的标签 可以使用Label代替Maintainer 最终都是在docker image基本信息中可以查看 |
 | RUN         | 执行命令                 | 执行一段命令 默认是/bin/sh 格式: RUN command 或者 RUN ["command" , "param1","param2"] |
 | CMD         | 容器启动命令             | 提供启动容器时候的默认命令 和ENTRYPOINT配合使用.格式 CMD command param1 param2 或者 CMD ["command" , "param1","param2"] |
-| ENTRYPOINT  | 入口                     | 一般在制作一些执行就关闭的容器中会使用                       |
+| ENTRYPOINT  | 容器入口程序             | 一般在制作一些执行就关闭的容器中会使用（可以带参数）         |
 | COPY        | 复制文件                 | build的时候复制文件到image中                                 |
 | ADD         | 添加文件                 | build的时候添加文件到image中 不仅仅局限于当前build上下文 可以来源于远程服务 |
 | ENV         | 环境变量                 | 指定build时候的环境变量 可以在启动的容器的时候 通过-e覆盖 格式ENV name=value |
@@ -374,7 +374,7 @@ docker build -f dockerfile文件路径 -t 镜像名称:版本
 
 
 
-## 2. 自定义centos7镜像
+## 2. 制作自定义centos7镜像
 
 ```shell
 # 默认登陆路径/usr，可以使用vim
@@ -391,12 +391,14 @@ cmd /bin/bash						  # 定义容器启动执行的命令
 docker build -f ./centos_dockerfile -t mycentos:1 .		# 镜像构建 -f指定dockerfile文件路径，-t设置新的镜像名和版本 ， . 代表路径
 ```
 
-## 3. dockerfile案例
 
-定义dockerfile，发布springboot项目
+
+## 3. 制作springboot项目镜像
+
+上传jar包到Linux服务器
 
 ```shell
-vim springboot_dockerfile	            # 创建文件并进入
+vim springboot_dockerfile	            # 创建dockerfile文件并进入
 
 FROM JAVA:8							  # 定义父镜像
 MAINTAINER health<health_x@163.com>		# 作者信息
@@ -404,10 +406,35 @@ ADD demo01-0.0.1-SNAPSHOT.jar app.jar	# 将jar包添加到容器
 CMD java -jar app.jar				   # 定义容器启动执行的命令
 :wq									 # 保存退出
 
-docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建
+docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建(别往后面的 . 表示dockerfile文件的路径)
 ```
 
 
+
+## 4. 制作微服务镜像
+
+```shell
+# 1.上传微服务jar包到Linux
+wgu_server-1.0.jar
+
+# 2.编写dockerfile文件(文件名需要有dockerfile)
+vim wfu_dockerfile
+
+FROM openjdk:8-jdk-alpine					 # 定义父镜像
+ARG JAR_FILE								# 设置编译镜像时加入的参数
+COPY ${JAR_FILE} app.jar					 # 拷贝外部文件JAR_FILE到镜像内，并命名为app.jar
+EXPOSE 10086								# 暴露端口
+ENTRYPOINT ["java","-jar","/app.jar"]		  # 设置容器的入口程序（可以在运行中接收参数）
+
+# 3.构建镜像（--build-arg 用于给 JAR_FILE 参数赋值，-t 生成的镜像名，最后一个 . 表示dockerfile文件的路径）
+docker build --build-arg JAR_FILE=wgu_server-1.0.jar -t eureka:v1 .
+
+# 4.查看镜像是否创建成功
+docker images
+
+# 5.创建容器并启动
+docker run -di --name=eureka -p 10086:10086 eureka:v1 
+```
 
 
 
@@ -497,9 +524,9 @@ http://192.168.149.135/hello
 
 # 八、Docker私有仓库
 
+## 1. 官方私有仓库Registry
 
-
-### 一、私有仓库搭建
+#### 1）私有仓库搭建
 
 ```shell
 # 1、拉取私有仓库镜像 
@@ -517,7 +544,7 @@ docker start registry
 
 ```
 
-### 二、将镜像上传至私有仓库
+#### 2）将镜像上传至私有仓库
 
 ```shell
 # 1、标记镜像为私有仓库的镜像     
@@ -530,12 +557,36 @@ docker push 私有仓库服务器IP:5000/centos:7
 
 
 
-### 三、 从私有仓库拉取镜像 
+#### 3） 从私有仓库拉取镜像 
 
 ```shell
 #拉取镜像 
 docker pull 私有仓库服务器ip:5000/centos:7
 ```
+
+
+
+## 2. Harbor私有仓库
+
+Harbor（港口，港湾）是一个用于存储和分发Docker镜像的企业级Registry服务器。
+
+除了Harbor这个私有镜像仓库之外，还有Docker官方提供的Registry。相对Registry，Harbor具有很多优势：
+
+1. 提供分层传输机制，优化网络传输 Docker镜像是是分层的，而如果每次传输都使用全量文件(所以用FTP的方式并不适合)，显然不经济。必须提供识别分层传输的机制，以层的UUID为标识，确定传输的对象。
+
+2. 提供WEB界面，优化用户体验 只用镜像的名字来进行上传下载显然很不方便，需要有一个用户界面可以支持登陆、搜索功能，包括区分公有、私有镜像。
+
+3. 支持水平扩展集群 当有用户对镜像的上传下载操作集中在某服务器，需要对相应的访问压力作分解。
+
+4. 良好的安全机制 企业中的开发团队有很多不同的职位，对于不同的职位人员，分配不同的权限，具有更好的安全性。
+
+[教程地址](https://blog.csdn.net/hancoder/article/details/118233786)
+
+
+
+
+
+
 
 
 

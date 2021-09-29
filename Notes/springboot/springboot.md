@@ -58,7 +58,7 @@ profiles是用来在不同环境下，动态切换不同配置功能的
 - 命令行参数：java -jar xxx.jar  --spring.profiles.active=dev
 
 
-  =======
+
 
 ## 四、获取其他module自动注入的bean
 
@@ -80,7 +80,6 @@ profiles是用来在不同环境下，动态切换不同配置功能的
 public @interface EnableUser{}
 2.使用的时候直接使用@EnableUser即可获取到“类名”这个对象
 ```
-
 
 
 
