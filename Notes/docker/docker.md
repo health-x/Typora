@@ -413,6 +413,8 @@ docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建(别往后�
 
 ## 4. 制作微服务镜像
 
+打jar包方式
+
 ```shell
 # 1.上传微服务jar包到Linux
 wgu_server-1.0.jar
@@ -427,13 +429,13 @@ EXPOSE 10086								# 暴露端口
 ENTRYPOINT ["java","-jar","/app.jar"]		  # 设置容器的入口程序（可以在运行中接收参数）
 
 # 3.构建镜像（--build-arg 用于给 JAR_FILE 参数赋值，-t 生成的镜像名，最后一个 . 表示dockerfile文件的路径）
-docker build --build-arg JAR_FILE=wgu_server-1.0.jar -t eureka:v1 .
+docker build --build-arg JAR_FILE=wgu_server-1.0.jar -t pdfsite:v1.0 .
 
 # 4.查看镜像是否创建成功
 docker images
 
 # 5.创建容器并启动
-docker run -di --name=eureka -p 10086:10086 eureka:v1 
+docker run -di --name=pdfsite -p 10086:10086 eureka:v1 
 ```
 
 
