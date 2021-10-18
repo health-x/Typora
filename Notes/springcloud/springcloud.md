@@ -1,18 +1,48 @@
-查看springboot与springcloud版本对应关系：https://start.spring.io/actuator/info
+# spring cloud
 
-<img src="../../assets/image-20210901094114237.png" alt="image-20210901094114237" style="zoom:80%;" />
+spring cloud官方文档：https://spring.io/projects/spring-cloud
 
-# 1. Eureka注册中心
+### 版本关系：
 
-## 1.1 搭建EurekaServer
+```shell
+# springboot与springcloud版本对应关系
+https://start.spring.io/actuator/info
+
+# spring cloud alibaba 与 别的的版本对应关系
+https://github.com/alibaba/spring-cloud-alibaba/wiki/%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E
+```
+
+
+
+# 一、Eureka注册中心
+
+服务注册与消费过程：服务启动时会自动向eureka注册自己的信息，eureka保存这些信息，消费者根据服务名称向eureka拉去提供者信息
+
+**EurekaServer（注册中心）：**
+
+- 记录服务信息：服务启动时会自动向eureka注册自己的信息，eureka保存这些信息
+- 心跳监控：服务提供者每隔30s会向eureka发送心跳请求，报告自己的健康状态，如果心跳不正常该服务会被eureka剔除掉。
+
+**EurekaClient（客户端）：**
+
+- 服务提供者：注册自己到EurekaServer，没隔30s发送自己的心跳。
+- 服务消费者：从EurekaServer拉取服务，基于服务列表做负载均衡，挑选一个服务发起远程调用。
+
+## 
+
+## 1. 练习：
+
+**搭建注册中心 -- 服务注册 -- 服务发现**
+
+### 1.1 搭建EurekaServer
 
 springboot用的是：2.3.9.RELEASE
 
 搭建EurekaServer服务步骤如下：
 
-1.创建项目，引入 spring-cloud-starter-netflix-eureka-server 的依赖（测试用的是2.2.7.RELEASE）
+1.创建 EurekaServer 模块，引入 spring-cloud-starter-netflix-eureka-server 的依赖（测试用的是2.2.7.RELEASE）
 
-2.编写启动类，添加 @EnableEurekaServer 注解
+2.编写启动类，添加 @EnableEurekaServer 注解开启eureka服务
 
 3.添加application.yml文件，编写如下配置
 
@@ -20,17 +50,19 @@ springboot用的是：2.3.9.RELEASE
 server:
   port: 10086
 
-# 下述两步都是为了注册服务
+# 下述两步都是为了注册服务（将自己注册到注册中心，为了以后做集群时互相调用）
 spring:
   application:
-    name: enrekaserver   #eure的服务名
+    name: eurekaserver   #eureka的服务名（EurekaServer自己也是个微服务，也需要有名字才能被注册到注册中心）
 eureka:
   client:
     service-url:  #eureka的地址信息（这里是把自己也注册到eureka上）
       defaultZone: http://127.0.0.1:10086/eureka
 ```
 
-## 1.2 注册user-service
+启动服务：访问localhost:10086 即可进入浏览器页面
+
+### 1.2 注册user-service
 
 将user-service服务注册到EurekaServer步骤如下：
 
@@ -38,23 +70,30 @@ eureka:
 
 2.在application.yml 编写如下配置：
 
-![image-20210901094532092](../../assets/image-20210901094532092.png)
+```shell
+spring:
+  application:
+    name: eurekaserver   #eureka的服务名
+eureka:
+  client:
+    service-url:  #eureka的地址信息（这里是把自己注册到eureka上）
+      defaultZone: http://127.0.0.1:10086/eureka
+```
 
-![image-20210901094513595](../../assets/image-20210901094513595.png)
 
-## 1.3 服务实例复制
+
+### 1.3 服务实例复制
 
 右键服务-->copy configuration··· --> 取名+设置端口号
 
 <img src="../../assets/image-20210831204945981.png"/>
 
-## 1.4 服务发现
+### 1.4 服务发现
 
 在order-service完成服务拉取，服务拉取是基于服务名称获取服务列表，然后对服务列表做负载均衡
 
-1.修改OrderService代码，修改访问url路径，用服务名代替ip:端口
-
-2.在order-service项目启动类中的RestTemplate添加负载均衡注解（@LoadBalanced）
+1. 修改OrderService代码，修改访问url路径，用服务名代替ip:端口
+2. 在order-service项目启动类中的RestTemplate添加负载均衡注解（@LoadBalanced）
 
 
 
@@ -68,7 +107,7 @@ eureka:
 
 问题：若启动报错，可在配置文件yml上面加 fetch-registry: false
 
-# 2. Ribbon负载均衡
+# 二、Ribbon负载均衡
 
 ![image-20210901113053667](../../assets/image-20210901113053667.png)
 
@@ -124,7 +163,7 @@ ribbon:
 
 
 
-# 3. Nacos注册中心
+# 三、Nacos注册中心
 
 
 
@@ -218,9 +257,18 @@ spring:
 
 
 
-# 4. Nacos配置管理
+# 四、Nacos配置管理
 
-首先在控制台添加配置
+首先在图形界面添加配置
+
+```shell
+# 步骤：配置管理 --> 配置列表 --> + 
+DataID：服务名称-运行环境.为配置内容的数据格式（例如：pdfsite-dev.properties）
+Group：分组
+配置格式：目前只支持yaml和properties
+```
+
+项目启动 --> 去取bootstrap.yml --> 读取nacos -->  读取application.yml（因此nacos配置 需要加在bootstrap中）
 
 1.引入Nacos配置管理客户端依赖
 
@@ -232,19 +280,22 @@ spring:
 </dependency>
 ```
 
-2.在userservice中的添加bootstrap.yml文件（bootstrap.yml优先级最高）
+2.在userservice中的添加bootstrap.yml文件（**bootstrap.yml优先级最高**）
 
 ```yaml
 spring:
-  application:
-    name: userservice
   profiles:
-    active: dev #环境
+    active: dev   # 激活dev配置(开发环境)
+  application:
+    name: pdfsite # 服务名称
   cloud:
     nacos:
-      server-addr: localhost:8848
       config:
-        file-extension: yaml  #文件名后缀
+        file-extension: properties  # 配置文件后缀名
+        namespace: env-dev    # nacos命名空间
+        group: pdfsite    # 组名
+      server-addr: 47.100.81.153:8848 #nacos地址
+# 服务名称-开发环境.配置文件后缀名 = dataID
 ```
 
 3.读取配置（在controller中操作）
@@ -305,7 +356,7 @@ public String now(){
 }
 ```
 
-# 5. Feign
+# 五、Feign
 
 ## 5.1 定义和使用Feign
 
