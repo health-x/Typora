@@ -57,7 +57,7 @@ spring:
 eureka:
   client:
     service-url:  #eureka的地址信息（这里是把自己也注册到eureka上）
-      defaultZone: http://127.0.0.1:10086/eureka
+      defaultZone: http://127.0.0.1:10086/eureka	# 注意这里的端口号要与服务的端口号一致
 ```
 
 启动服务：访问localhost:10086 即可进入浏览器页面
@@ -88,24 +88,40 @@ eureka:
 
 <img src="../../assets/image-20210831204945981.png"/>
 
-### 1.4 服务发现
+### 1.4 服务发现（已弃用）
 
-在order-service完成服务拉取，服务拉取是基于服务名称获取服务列表，然后对服务列表做负载均衡
-
-1. 修改OrderService代码，修改访问url路径，用服务名代替ip:端口
-2. 在order-service项目启动类中的RestTemplate添加负载均衡注解（@LoadBalanced）
-
-
-
-1.引入eureka-client依赖
+1.引入spring-cloud-starter-netflix-eureka-client 依赖
 
 2.在application.yml中配置eureka地址和自己的服务名
 
-3.1 给restTemplate添加@LoadBalanced注解，实现负载均衡
+3.在启动类中编写RestTemplate，并注入spring容器
 
-3.2 用服务提供者的服务名远程调用
+```shell
+@Bean
+@LoadBalanced	//实现负载均衡
+public RestTemplate restTemplate(){
+	return new RestTemplate();
+}
+```
 
-问题：若启动报错，可在配置文件yml上面加 fetch-registry: false
+4.用服务提供者的服务名远程调用
+
+```shell
+@Override
+public Student queryStudentById(Long id) {
+    // 1.查询学生信息
+    Student stu = studentMapper.findById(id);
+    //2. http://服务名/路径/id
+    String url = "http://bag-service/bag/"+stu.getBagId();
+    //3 利用resttemplate发送http请求，实现远程调用
+    Bag bag = restTemplate.getForObject(url, Bag.class);
+    stu.setBag(bag);
+    // 4.返回
+    return stu;
+}
+```
+
+<font color="red">注意：若启动报错，可在配置文件yml上面加 fetch-registry: false 和 register-with-eureka: false</font>
 
 # 二、Ribbon负载均衡
 
