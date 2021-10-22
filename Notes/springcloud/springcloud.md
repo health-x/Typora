@@ -125,15 +125,13 @@ public Student queryStudentById(Long id) {
 
 # 二、Ribbon负载均衡
 
-![image-20210901113053667](../../assets/image-20210901113053667.png)
+Ribbon负载均衡规则接口为：IRule
 
+### 1. 修改负载均衡策略
 
+ribbon默认采用轮询方式进行负载均衡，通过定义IRule实现可修改负载均衡策略，有两种方式：
 
-负载均衡策略
-
-通过定义IRule实现可修改负载均衡策略，有两种方式：
-
-1.代码方式：在order-service中的启动类，定义一个新的IRule（全局）
+（1）代码方式：在**服务调用方**的启动类(配置类)，定义一个新的IRule（全局）
 
 ```java
 /**
@@ -146,9 +144,7 @@ public IRule randomRule(){
 }
 ```
 
-2.配置文件方式：在order-service的yml文件中添加新的配置（针对某个服务进行配置）
-
-userservice.ribbon.NFloadBalanceRuleClassName: com.netflix.loadbalancer.RandomRule #负载均衡规则（随机）
+（2）配置文件方式：在**服务调用方**的yml文件中添加新的配置（针对某个服务进行配置），如下：针对访问userservice服务时使用随机访问
 
 ```yaml
 userservice:
@@ -158,11 +154,11 @@ userservice:
 
 
 
-### 饥饿加载
+### 2. 饥饿加载
 
-Ribbon默认采用懒加载，即第一次访问时才回去创建LoadBalanceClient，请求时间较长
+Ribbon默认采用**懒加载**，即第一次访问时才会去创建LoadBalanceClient，请求时间较长
 
-饥饿加载会在项目启动时创建，降低第一次访问的耗时，通过下述配置开启饥饿加载：
+**饥饿加载** 则会在项目启动时创建，降低第一次访问的耗时，可通过下述配置开启饥饿加载：
 
 ribbon.eager-load.enable: true   开启加载
 
@@ -172,20 +168,20 @@ ribbon.eager-load.clients: userservice  # 指定对userservice这个服务进行
 ribbon:
   eager-load:
     enabled: true # 开启加载
-    clients: userservice  # 指定对userservice这个服务进行饥饿加载
+    clients: userservice  # 指定对userservice这个服务进行饥饿加载（先开启再指定服务，这两步都需要）
 ```
-
-
-
-
 
 # 三、Nacos注册中心
 
+nacos安装：参考Linux目录下的**安装软件.md**
 
+在bin目录执行：./startup.sh -m standalone    单机启动nacos
+
+访问：ip:8848/nacos/index.html
 
 ## 3.1 服务注册到nacos
 
-1.在cloud-demo父工程添加spring-cloud-alibaba的管理依赖：
+1.在父工程中添加spring-cloud-alibaba的管理依赖(包含各种spring-cloud-alibaba的组件)：
 
 ```xml
 <!--nacos-->
@@ -198,9 +194,7 @@ ribbon:
 </dependency>
 ```
 
-2.注掉order-service和user-service中原有的eureka依赖
-
-3.添加nacos的客户端依赖
+2.在子工程中添加nacos的客户端依赖
 
 ```xml
 <dependency>
@@ -209,7 +203,16 @@ ribbon:
 </dependency>
 ```
 
-4.启动user-service和order-service。启动nacos，访问黑窗口给与的地址，在服务列表可以看到注册的各个服务
+3.在子工程的yml文件中添加 nacos 地址进行服务注册
+
+```shell
+spring
+  cloud:
+    nacos:
+      server-addr: 47.100.81.153:8848 #nacos服务地址
+```
+
+4.启动工程，启动nacos，访问黑窗口给与的地址，在服务列表可以看到注册的各个服务
 
 ## 3.2 服务集群配置
 
