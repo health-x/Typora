@@ -171,7 +171,7 @@ ribbon:
     clients: userservice  # 指定对userservice这个服务进行饥饿加载（先开启再指定服务，这两步都需要）
 ```
 
-# 三、Nacos注册中心
+# 三、Nacos
 
 nacos安装：参考Linux目录下的**安装软件.md**
 
@@ -210,13 +210,17 @@ spring
   cloud:
     nacos:
       server-addr: 47.100.81.153:8848 #nacos服务地址
+      discovery:
+        namespace: env-dev  # 注册到nacos里面的哪个环境（填写命名空间的ID，默认会注册到public下)
 ```
 
 4.启动工程，启动nacos，访问黑窗口给与的地址，在服务列表可以看到注册的各个服务
 
 ## 3.2 服务集群配置
 
-1.修改yml配置即可，如下最后两行：（spring.cloud.nacos.discovery.cluster-name属性）
+把一个服务的多个实例部署在多个集群（分配在多个不同的地区/机房）中，避免因为某个机房出了问题导致服务不能调用（即：容灾）
+
+1.修改yml配置即可，增加cluster-name属性：（spring.cloud.nacos.discovery.cluster-name属性）
 
 ```yaml
 cloud:
@@ -230,26 +234,28 @@ cloud:
 
 3.在nacos控制台可以看到集群变化，有两个集群了，一个BJ，一个SH
 
-
+ 
 
 ## 3.3 Nacos负载均衡
 
-### 访问顺序
+服务在选择实例时默认为轮询，配置其他负载均衡策略(两种)
 
-在order-service的yml中配置：
+### 3.31 优先访问同集群实例
+
+在服务消费者（调用方）的yml中配置：
 
 ```yaml
 #nacos负载均衡
-userservice:
+被调用的服务名:
   ribbon:
-    NFLoadBalancerRuleClassName: com.alibaba.cloud.nacos.ribbon.NacosRule #优先选择本地集群，然后再随机访问服务
+    NFLoadBalancerRuleClassName: com.alibaba.cloud.nacos.ribbon.NacosRule 	#优先选择本地集群，然后再随机访问服务
 ```
 
-此时再去访问user-service时就会优先访问与自己相同集群的了。找不到再去其他集群，并且会报警告
+此时再去调用实例时就会优先访问与自己相同集群的了（相同集群中多个相同实例的话采用是随机访问）。找不到再去其他集群，并且会报警告
 
-### Nacos权重设置
+### 3.32 Nacos权重设置
 
-在nacos控制台可以设置实例的权重值，步骤如下：
+在nacos控制台可以设置实例的权重值（权重越大，访问频率越高），步骤如下：
 
 1. 点开服务详情，选择想设置的实例，点击编辑，直接修改即可
 2. <img src="../../assets/image-20210901151434331.png" alt="image-20210901151434331" style="zoom:80%;" />
@@ -260,9 +266,9 @@ userservice:
 
 设置命名空间（不同命名空间下的服务互相不可见）
 
-1.在控制台新建dev命名空间，复制其ID
+1.在图像界面新建 env-test 命名空间，复制其ID
 
-2.在想添加到dev命名空间的服务的yml中添加 namespace: 命名空间ID 配置，重启服务
+2.在想添加到 env-test 命名空间的服务的yml中添加 discovery.namespace: 命名空间ID 配置，重启服务
 
 ```
 spring:
@@ -276,7 +282,7 @@ spring:
 
 
 
-# 四、Nacos配置管理
+## 3.5Nacos配置管理
 
 首先在图形界面添加配置
 
@@ -375,9 +381,9 @@ public String now(){
 }
 ```
 
-# 五、Feign
+# 四、Feign
 
-## 5.1 定义和使用Feign
+## 4.1 定义和使用Feign
 
 1.引入依赖
 
@@ -446,7 +452,7 @@ public Order queryOrderById(Long orderId) {
 
 
 
-## 5.2.自定义配置
+## 4.2.自定义配置
 
 Feign可以支持很多的自定义配置，如下表所示：
 
@@ -528,7 +534,7 @@ public class DefaultFeignConfiguration  {
 
 
 
-## 5.3.Feign使用优化
+## 4.3.Feign使用优化
 
 1. 日志级别尽量用basic
 
