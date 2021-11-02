@@ -181,6 +181,17 @@ nacos安装：参考Linux目录下的**安装软件.md**
 
 ## 3.1 服务注册到nacos
 
+**注册中心细节分析：**
+
+服务启动时会将自己的信息注册到注册中心，消费者需要调用的时候就会去注册中心拉取服务，并将拉取的服务缓存起来（存储到一个缓存列表里面），这个列表每隔30s重新去注册中心拉取一次进行更新。消费者拿到服务列表之后再去进行负载均衡、远程调用。如果拉取间隔中服务有变更nacos会主动推送变更信息到调用者。
+
+**临时实例和非临时实例**
+
+注册到nacos的服务默认为临时实例，可通过 **spring.cloud.nacos.discovery.ephemeral: false** 设置其为非临时实例
+
+- 临时实例：采用心跳检测，服务会每隔一段时间发送一个请求到nacos中，如果哪天不发送请求了，说明服务挂掉了，此时nacos就会将其从服务列表在剔除。
+- 非临时实例：采用主动检测，nacos主动发请求检测该服务是否处于健康状态，如果服务不健康，则会被nacos标记为不健康状态，并等待其恢复。
+
 1.在父工程中添加spring-cloud-alibaba的管理依赖(包含各种spring-cloud-alibaba的组件)：
 
 ```xml
@@ -284,16 +295,20 @@ spring:
 
 ## 3.5Nacos配置管理
 
+### 3.51 添加读取配置
+
+nacos配置管理：如果修改了配置，配置管理服务会主动通知 微服务 配置更改了，微服务得到信息就回去配置管理服务中重新读取配置（后期还可以为服务设置热更新）
+
 首先在图形界面添加配置
 
 ```shell
 # 步骤：配置管理 --> 配置列表 --> + 
 DataID：服务名称-运行环境.为配置内容的数据格式（例如：pdfsite-dev.properties）
 Group：分组
-配置格式：目前只支持yaml和properties
+配置格式：目前只支持yaml和properties（不能带空格）
 ```
 
-项目启动 --> 去取bootstrap.yml --> 读取nacos -->  读取application.yml（因此nacos配置 需要加在bootstrap中）
+项目启动 --> 读取bootstrap.yml --> 读取nacos -->  读取application.yml（因此nacos配置 需要加在bootstrap中）
 
 1.引入Nacos配置管理客户端依赖
 
@@ -305,9 +320,9 @@ Group：分组
 </dependency>
 ```
 
-2.在userservice中的添加bootstrap.yml文件（**bootstrap.yml优先级最高**）
+2.在 服务中的添加bootstrap.yml文件（**bootstrap.yml优先级最高**）
 
-```yaml
+```yml
 spring:
   profiles:
     active: dev   # 激活dev配置(开发环境)
@@ -335,11 +350,13 @@ public String now(){
 }
 ```
 
-### 配置修改后自动刷新
+### 3.52 配置修改后自动刷新（热更新）
+
+nacos配置更新之后，微服务无需重启就可以感知
 
 #### 方式一
 
-只需在@Value注入的变量所在类上添加@RefreshScope注解
+只需在使用@Value注入的变量**所在类上**添加@RefreshScope注解
 
 ```java
 @RestController
@@ -363,7 +380,7 @@ public class UserController {
 ```java
 @Data
 @Component
-@ConfigurationProperties("pattern")	//实时同步配置信息，前缀名和变量名跟配置文件一致，即可完成属性的自动注入
+@ConfigurationProperties(prefix= "pattern")	//实时同步配置信息，前缀名加变量名跟配置文件一致，即可完成属性的自动注入
 public class PatternProperties {
     private String dateformat;
 }
@@ -380,6 +397,17 @@ public String now(){
     return LocalDateTime.now().format(DateTimeFormatter.ofPattern(properties.getDateformat()));
 }
 ```
+
+### 3.53 多环境共享
+
+微服务启动时会从nacos中读取多个配置文件：
+
+- 服务名-环境.配置文件后缀名：只有对应环境下才会读取此配置文件
+- 服务名.配置文件后缀名：无论什么环境都会读取此配置文件
+
+补充：当有相同的配置时优先级情况为 服务名-环境.后缀名 > 服务名.后缀名 > 本地配置文件(application.yml)
+
+
 
 # 四、Feign
 
