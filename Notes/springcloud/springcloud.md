@@ -293,7 +293,7 @@ spring:
 
 
 
-## 3.5Nacos配置管理
+## 3.5 Nacos配置管理
 
 ### 3.51 添加读取配置
 
@@ -409,13 +409,17 @@ public String now(){
 
 
 
+## 3.6 nacos集群搭建
+
+待续......
+
 # 四、Feign
 
 ## 4.1 定义和使用Feign
 
 1.引入依赖
 
-在order-service服务的pom文件中引入feign的依赖
+在student-service（调用者）服务的pom文件中引入feign的依赖
 
 ```xml
 <!--Feign-->
@@ -427,35 +431,35 @@ public String now(){
 
 2.开启Feign功能
 
-在order-service的启动类添加注解开启Feign功能
+在student-service（调用者）的启动类添加注解开启Feign功能
 
 ```java
 @EnableFeignClients	//开启Feign注解
-@MapperScan("cn.itcast.order.mapper")
+@MapperScan("com.health.student.mapper")
 @SpringBootApplication
-public class OrderApplication {
+public class StudentApplication {
     ······
 ```
 
-3.编写Feign客户端
+3.编写Feign客户端接口
 
-在order-service中新建一个接口，内容如下：
+在student-service（调用者）中新建一个被调用者（bagService）接口，内容如下：
 
 ```java
-@FeignClient("userservice")
-public interface UserClient {
-    @GetMapping("/user/{id}")
-    User findById(@PathVariable("id") Long id);
+@FeignClient("bag-service")		//被调用的服务名称
+public interface BagClient {
+    @GetMapping("/bag/{id}")
+    Bag findById(@PathVariable("id") Long id);
 }
 ```
 
 这个客户端主要是基于SpringMVC的注解来声明远程调用的信息，比如：
 
-- 服务名称：userservice
+- 服务名称：bag-service
 - 请求方式：GET
-- 请求路径：/user/{id}
+- 请求路径：/bag/{id}
 - 请求参数：Long id
-- 返回值类型：User
+- 返回值类型：Bag
 
 这样，Feign就可以帮助我们发送http请求，无需自己使用RestTemplate来发送了。
 
@@ -465,16 +469,23 @@ public interface UserClient {
 
 ```java
 @Autowired
-private UserClient userClient;
+private BagClient bagClient;
 
-public Order queryOrderById(Long orderId) {
-    // 1.查询订单
-    Order order = orderMapper.findById(orderId);
-
-    //3 使用Feign发送http请求，实现远程调用
-    User user = userClient.findById(orderId);
-    order.setUser(user);
-    return order;
+public Student queryStudentById(Long id) {
+    // 1.查询学生信息
+    Student stu = studentMapper.findById(id);
+    
+    /**
+    restTemplate方式发送http请求，实现远程调用
+        String url = "http://bag-service/bag/"+stu.getBagId();
+        Bag bag = restTemplate.getForObject(url, Bag.class);
+        stu.setBag(bag);
+    */
+    
+    //2.Feign 方式远程调用
+    Bag bag = bagClient.findById(id);
+    stu.setBag(bag);
+    return stu;
 }
 ```
 

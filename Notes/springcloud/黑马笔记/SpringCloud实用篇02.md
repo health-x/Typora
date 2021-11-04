@@ -844,7 +844,7 @@ spring:
     name: gateway # 服务名称
   cloud:
     nacos:
-      server-addr: localhost:8848 # nacos地址
+      server-addr: localhost:8848 # nacos地址，将网关注册到注册中心
     gateway:
       routes: # 网关路由配置
         - id: user-service # 路由id，自定义，只要唯一即可
@@ -1205,5 +1205,4 @@ spring:
             allowCredentials: true # 是否允许携带cookie
             maxAge: 360000 # 这次跨域检测的有效期
 ```
-
 
