@@ -625,3 +625,93 @@ feign:
     max-connections-per-route: 50 # 每个路径的最大连接数
 ```
 
+
+
+  
+
+# 五、Gateway
+
+官方文档：https://docs.spring.io/spring-cloud-gateway/docs/current/reference/html/
+
+ 网关的功能：
+
+- 身份认证和权限校验：校验用户是是否有请求资格，如果没有则进行拦截。
+- 服务路由、负载均衡：一切请求都必须先经过gateway，但网关不处理业务，而是根据某种规则，把请求转发到某个微服务，这个过程叫做路由。路由的目标服务有多个时，还需要做负载均衡。
+- 请求限流：当请求流量过高时，在网关中按照下流的微服务能够接受的速度来放行请求，避免服务压力过大。
+
+## 5.1 练习
+
+#### 5.11 新建 gateway 模块 (项目)，引入依赖
+
+```xml
+<!--nacos服务注册依赖-->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
+<!--网关gateway依赖-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-gateway</artifactId>
+</dependency>
+```
+
+#### 5.12编写配置文件
+
+```yml
+server:
+  port: 9000   # 网关端口
+spring:
+  application:
+    name: gateway   # 服务名称
+  cloud:
+    nacos:
+      server-addr: 47.100.81.153:8848   # nacos地址，将网关注册到注册中心
+      discovery:
+        namespace: env-dev  # 注册到nacos里面的哪个环境(默认注册到public)
+        group: demo02
+    gateway:
+      routes: # 网关路由配置
+        - id: student-service  # 路由id，自定义，只要唯一即可
+          # uri: http://127.0.0.1:8081 # 路由的目标地址 http就是固定地址
+          uri: lb://student-service    # 路由的目标地址 lb就是负载均衡，后面跟服务名称
+          predicates:   # 路由断言，也就是判断请求是否符合路由规则的条件
+            - Path=/student/**   # 按照路径匹配，只要以/student/开头就符合要求
+
+        - id: bag-service	# 可以配置多个服务
+          uri: lb://bag-service
+          predicates:
+            - Path=/bag/**
+```
+
+此时启动gateway服务，再启动bag和student服务，访问 localhost:9000/bag/1 相当于之前访问 localhost:8081/bag/1 ，因为网关会基于配置的路由规则把请求路由到对应的服务上。
+
+路由配置包括：
+
+1. 路由id：路由的唯一标识
+2. 路由目标（uri）：路由的目标地址，http代表固定地址，lb代表根据服务名负载均衡
+3. 路由断言（predicates）：判断路由的规则是否符合，符合则转发到路由目的地。
+4. 路由过滤器（filters）：对请求或响应做处理
+
+
+
+## 5.2 断言工厂
+
+Predicate Factory 会读取我们编写的yml中的断言规则，并解析处理，转变为路由判断条件对请求进行判断。
+
+例如Path=/user/**是按照路径匹配，这个规则是由
+
+`org.springframework.cloud.gateway.handler.predicate.PathRoutePredicateFactory`类来处理的，像这样的断言工厂在SpringCloudGateway还有十几个:
+
+<img src="../../assets/image-20211111200049789.png" alt="image-20211111200049789"  />
+
+只需要掌握Path这种路由规则即可。
+
+
+
+## 5.3.过滤器工厂
+
+GatewayFilter是网关中提供的一种过滤器，可以对进入网关的请求和微服务返回的响应做处理：
+
+![image-20211111200607115](../../assets/image-20211111200607115.png)
+
