@@ -709,9 +709,245 @@ Predicate Factory 会读取我们编写的yml中的断言规则，并解析处�
 
 
 
-## 5.3.过滤器工厂
 
-GatewayFilter是网关中提供的一种过滤器，可以对进入网关的请求和微服务返回的响应做处理：
 
-![image-20211111200607115](../../assets/image-20211111200607115.png)
+## 5.3.过滤器工厂（通过配置）
+
+GatewayFilter是网关中提供的一种过滤器，可以对进入网关的 **请求** 和微服务返回的 **响应** 做处理：
+
+![image-20211116114657887](../../assets/image-20211116114657887.png)
+
+### 5.3.1. 路由过滤器的种类
+
+Spring提供了31种不同的路由过滤器工厂（使用方法可参照本节标题上给的官网）。例如：
+
+| **名称**             | **说明**                     |
+| -------------------- | ---------------------------- |
+| AddRequestHeader     | 给当前请求添加一个请求头     |
+| RemoveRequestHeader  | 移除请求中的一个请求头       |
+| AddResponseHeader    | 给响应结果中添加一个响应头   |
+| RemoveResponseHeader | 从响应结果中移除有一个响应头 |
+| RequestRateLimiter   | 限制请求的流量               |
+
+
+
+### 5.3.2. AddRequestHeader 示例
+
+在网关的配置文件加上 AddRequestHeader 的路由过滤配置（在最后几行），即完成对该路由添加请求头了，AddRequestHeader =请求头名,内容
+
+```yml
+spring:
+  application:
+    name: gateway   # 服务名称
+  cloud:
+    nacos:
+      server-addr: 47.100.81.153:8848   # nacos地址，将网关注册到注册中心
+      discovery:
+        namespace: env-dev  # 注册到nacos里面的哪个环境(默认注册到public)
+        group: demo02
+    gateway:
+      routes: # 网关路由配置
+        - id: student-service  # 路由id，自定义，只要唯一即可
+          # uri: http://127.0.0.1:8081 # 路由的目标地址 http就是固定地址
+          uri: lb://student-service    # 路由的目标地址 lb就是负载均衡，后面跟服务名称
+          predicates:   # 路由断言，也就是判断请求是否符合路由规则的条件
+            - Path=/student/**   # 按照路径匹配，只要以/student/开头就符合要求
+
+        - id: bag-service
+          uri: lb://bag-service
+          predicates:
+            - Path=/bag/**
+          filters:  # 过滤器（只针对该路由生效）
+            - AddRequestHeader=Truth,I was no object! # 添加请求头(请求头名,内容)
+            
+      default-filters: # 默认过滤器，会对所有路由请求都生效
+        - AddRequestHeader=haha,I was no object！
+```
+
+
+
+此时我们可以在controller中通过参数获取请求头内容：RequestHeader注解获取，并打印出来
+
+```java
+@GetMapping("{bagId}")
+public Bag queryAll(@PathVariable("bagId") Long id,
+                    @RequestHeader(value = "haha", required = false) String truth) {
+    System.out.println("truth: "+truth);
+    return bagService.queryBagById(id);
+}
+```
+
+
+
+## 5.4 全局过滤器（通过代码）
+
+处理一切进入网关的请求和微服务响应，于GatewayFilter的作用一样，但GatewayFilter是通过配置定义，GlobalFilter的逻辑需要自己写代码实现。
+
+定义全局过滤器的方式：实现GlobalFilter接口
+
+ ```java
+ //spring中的接口
+ public interface GlobalFilter {
+ 
+ 	/**
+ 	 * 处理web请求 and (可选) 通过给定的GatewayFilterChain委托给下一个WebFilter
+ 	 * @param exchange 请求上下文，里面可以获取Request、Response等信息
+ 	 * @param chain 用来把请求委托给下一个过滤器
+ 	 * @return {@code Mono<Void>} 返回标识当前过滤器业务结束
+ 	 */
+ 	Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain);
+ }
+ ```
+
+
+
+### 5.4.1 小案例
+
+**需 求**：定义全局过滤器，拦截请求，判断请求的参数是否满足下面条件：
+
+- 参数中是否有authorization，
+
+- authorization参数值是否为admin
+
+如果同时满足则放行，否则拦截
+
+
+
+**实现步骤**：在gateway中定义一个过滤器：
+
+1. 实现GlobalFilter接口
+2. 添加@Order注解或实现Ordered接口，设置过滤处理优先级
+3. 编写处理逻辑
+
+```java
+package com.health.gateway.filters;
+
+import org.springframework.cloud.gateway.filter.GatewayFilterChain;
+import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Component;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.server.ServerWebExchange;
+import reactor.core.publisher.Mono;
+
+/**
+ * @author health
+ * @desc 全局过滤器,拦截所有请求，并做自定义处理
+ * @since 2021/11/16
+ */
+@Order(-1)  //设置该过滤器优先级，数字越小优先级越高
+@Component  //添加到spring容器中
+public class AuthorizeFilter implements GlobalFilter {
+
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        // 1.获取请求参数
+        MultiValueMap<String, String> params = exchange.getRequest().getQueryParams();
+        // 2.获取authorization参数
+        String auth = params.getFirst("authorization");
+        // 3.校验
+        if ("admin".equals(auth)) {
+            // 放行
+            return chain.filter(exchange);
+        }
+        // 4.拦截
+        // 4.1.禁止访问，设置状态码
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        // 4.2.结束处理
+        return exchange.getResponse().setComplete();
+    }
+}
+```
+
+
+
+
+
+### 5.4.2.过滤器执行顺序
+
+请求进入网关会碰到三类过滤器：当前路由的过滤器、DefaultFilter、GlobalFilter
+
+请求路由后，会将当前路由过滤器和DefaultFilter、GlobalFilter，合并到一个过滤器链（集合）中，排序后依次执行每个过滤器：
+
+
+
+排序的规则：
+
+- 每一个过滤器都必须指定一个int类型的order值，**order值越小，优先级越高，执行顺序越靠前**。
+- GlobalFilter通过实现Ordered接口，或者添加@Order注解来指定order值，由我们自己指定
+- 路由过滤器(单个服务的那种)和defaultFilter的order由Spring指定，默认是按照声明顺序从1递增。
+- 当过滤器的order值一样时，会按照 defaultFilter > 路由过滤器 > GlobalFilter的顺序执行。
+
+
+
+详细内容，可以查看源码：
+
+`org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator#getFilters()`方法是先加载defaultFilters，然后再加载某个route的filters，然后合并。
+
+`org.springframework.cloud.gateway.handler.FilteringWebHandler#handle()`方法会加载全局过滤器，与前面的过滤器合并后根据order排序，组织过滤器链
+
+
+
+## 5.5 跨域问题
+
+### 5.5.1 跨域简介
+
+跨域：域名不一致就是跨域，主要包括：
+
+- 域名不同： www.taobao.com 和 www.taobao.org 和 www.jd.com 和 miaosha.jd.com
+
+- 域名相同，端口不同：localhost:8080和localhost8081
+
+### 5.5.2 跨域问题
+
+浏览器禁止 请求的发起者与服务端发生跨域 ajax请求，请求被浏览器拦截的问题
+
+### 5.5.3 解决方法：
+
+CORS（详情：https://www.ruanyifeng.com/blog/2016/04/cors.html），在Gateway项目中配置：
+
+```yml
+spring:
+  cloud:
+    gateway:
+      globalcors: # 全局的跨域处理
+        add-to-simple-url-handler-mapping: true # 解决options请求被拦截问题,即不拦截
+        corsConfigurations:
+          '[/**]':		# 拦截哪些请求
+            allowedOrigins: 	# 允许哪些网站的跨域请求
+              - "http://localhost:8090"
+              - "https://www.baidu.com"
+            allowedMethods: 	# 允许的跨域ajax的请求方式
+              - "GET"
+              - "POST"
+              - "DELETE"
+              - "PUT"
+              - "OPTIONS"
+            allowedHeaders: "*" 	# 允许在请求中携带的头信息
+            allowCredentials: true 	# 是否允许携带cookie
+            maxAge: 360000 	  # 这次跨域检测的有效期
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
