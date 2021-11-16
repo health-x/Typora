@@ -875,3 +875,21 @@ docker exec -it redis容器ID redis-cli		# 进入redis客户端
 
 
 
+## 10. 安装RabbitMQ
+
+```SHELL
+docker pull rabbitmq:[版本]		# 在docker hub查看可用版本
+
+# 创建并运行容器
+docker run \
+-e RABBITMQ_DEFAULT_USER=health \		# 设置环境变量
+-e RABBITMQ_DEFAULT_PASS=123456 \		# 设置环境变量
+--name mq-3.9 \		# 给该容器取名
+--hostname mq1 \	# 配置主机名（未来将来配集群）
+-p 15672:15672 \	# 端口映射（管理平台的端口，ui界面给我们用）
+-p 5672:5672 \		# 端口映射（做消息通讯的端口）
+-d \			   # 后台运行
+rabbitmq:3.9-management		# 镜像名称
+```
+
+启动后在浏览器访问 主机:15672即可进入管理员ui界面
