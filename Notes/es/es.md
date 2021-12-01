@@ -605,6 +605,15 @@ GET /索引库名/_mapping
 
 ## 五、文档操作
 
+使用sql语句示例
+
+```shell
+POST /_sql?format=txt
+{
+  "query": "select * from customer"
+}
+```
+
 
 
 ### 5.1 新增文档
