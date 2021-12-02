@@ -91,6 +91,40 @@ v-model只能应用在表单类/输入类元素上，如input，radio，checkbox
 
 
 
+# 三、脚手架
+
+官方文档：https://cli.vuejs.org/zh/guide/
+
+## 3.1 使用步骤
+
+```shell
+# 1.全局安装@vue/cli
+npm install -g @vue/cli
+
+# 2.切换到要创建项目的目录，使用命令创建项目
+vue create 项目名
+
+# 3.启动项目
+npm run serve
+```
+
+注意：
+
+1. 如果出现下载缓慢请配置 npm 淘宝镜像：npm config set registry https://registry.npm.taobao.org
+2. Vue 脚手架隐藏了所有webpack相关的配置，若想看具体的webpack配置，请执行：vue inspect > output.js
+
+
+
+## 3.2 项目结构
+
+### 配置文件
+
+| 文件名            | 功能作用                                     |
+| ----------------- | -------------------------------------------- |
+| .gitignore        | git的忽略文件，设置不被git管理的文件和文件夹 |
+| babel.config.js   | babel的控制文件                              |
+| package-lock.json | 包的说明书                                   |
+| package.json      | ...（scripts下的 lint 作用语法检查）         |
 
 
 
@@ -106,12 +140,7 @@ v-model只能应用在表单类/输入类元素上，如input，radio，checkbox
 
 
 
-
-
-
-
-
-
+ 
 
 
 
