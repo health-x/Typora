@@ -94,6 +94,72 @@ v-model只能应用在表单类/输入类元素上，如input，radio，checkbox
 - 被用来给元素或子组件注册引用信息（id的替代者）
 - 应用在html标签上获取的是真实的dom元素，应用在组件标签上是组件的实例对象
 
+
+
+## 2.5 props属性
+
+**父传子（常用）**
+
+```vue
+<!--父组件-->
+<MyItem v-for="todo in todos" :key="todo.id" :todo="todo"/>
+
+
+<!--子组件-->
+<template>
+  <div>
+    <input type="checkbox" :checked="todo.done"/>
+    <span>{{todo.title}}</span>
+  </div>
+</template>
+<script>
+  export default {
+    name: "MyItem",
+    props:['todo'],
+  };
+</script>
+```
+
+**子传父（不用）**
+
+```vue
+<!--父组件-->
+<MyHeader :addTodoObj="addTodoObj"></MyHeader>	//传给子组件一个函数
+<script>
+export default {
+  name: "App",
+  methods:{
+    //该函数接收一个参数
+    addTodoObj(todoObj){
+      console.log(todoObj)
+    },
+  },
+};
+</script>
+
+
+<!--子组件-->
+<script>
+export default {
+  name: "MyHeader",
+  props:["addTodoObj"],	//接收父组件传的函数
+  methods:{
+    addTodo(){
+      const todoObj = 111;
+      //调用父组件传的函数，把值传递给父组件
+      this.addTodoObj(todoObj)
+    }
+  }
+};
+</script>
+
+
+```
+
+
+
+
+
 # 三、脚手架
 
 官方文档：https://cli.vuejs.org/zh/guide/
@@ -163,7 +229,9 @@ npm run serve
 
 
 
+# 小工具
 
+npm i nanoid	uuid简化版
 
 
 
