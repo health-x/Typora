@@ -303,14 +303,16 @@ export default {
 
 
 
-# 三、脚手架
+# 三、脚手架创建项目
 
 官方文档：https://cli.vuejs.org/zh/guide/
 
 ## 3.1 使用步骤
 
+默认vscode、nodejs已经安装好了
+
 ```shell
-# 1.全局安装@vue/cli
+# 1.全局安装@vue/cli 可以帮助我们快速构建Vue项目
 npm install -g @vue/cli
 
 # 2.切换到要创建项目的目录，使用命令创建项目
