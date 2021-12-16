@@ -847,14 +847,51 @@ POST /stu/_search
   	"size": 1	//每页显示几条
 }
 
-//按照性别分组
+//分组 按照性别分组
 GET /stu/_search
 {
-  "size": 0,	//表示只返回聚合结果，无具体数据。
+  "size": 0,	//表示只返回聚合结果，不显示命中（hits）的所有文档信息。
   "aggs": {
-    "group_by_sex": {
+    "group_by_sex": {	// 聚合结果的名称, 自定义
       "terms": {
-        "field": "sex.keyword"
+        "field": "sex"
+      }
+    }
+  }
+}
+
+//分组+求和+时间范围筛选
+GET fund/_search
+{
+  "query": {
+    "range": {
+      "create_time": {
+        "gte": "2021-12",
+        "lte": "2022-01"
+      }
+    }
+  }, 
+  "size": 0,
+  "aggs": {
+    "group_by_tags": {
+      "terms": {
+        "field": "seller_id",
+        "order": {
+          "_key": "asc"
+        }, 
+        "size": 100
+      },
+      "aggs": {
+        "sum_percentage": {
+          "sum": {
+            "field": "percentage"
+          }
+        },
+        "sum_perform": {
+          "sum": {
+            "field": "perform"
+          }
+        }
       }
     }
   }
