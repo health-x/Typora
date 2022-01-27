@@ -1,6 +1,4 @@
-[TOC]
-
-
+数据结构可视化：https://www.cs.usfca.edu/~galles/visualization/Algorithms.html
 
 # 数据结构基本术语
 

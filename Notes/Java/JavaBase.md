@@ -46,7 +46,7 @@ lnputStream：这个抽象类是表示字节输入流的所有类的超类
 
 OutputStream：这个抽象类是表示字节输出流的所有类的超类
 
-子类名特点:子类名称都是以其父类名作为子类名的后缀
+子类名特点：子类名称都是以其父类名作为子类名的后缀
 
 ### 字节流写数据
 
@@ -409,9 +409,161 @@ package com.health.编码解码;import java.io.UnsupportedEncodingException;impo
 
 
 
+# 二、JDK8新特性
+
+- lambda表达式
+- 集合之stream流式操作
+- 接口的增强
+- 并行数组的排序
+- Optional中避免Null检查
+- 新的时间和日期 API
+- 可重复注解
 
 
-# 二、反射
+
+## 2.1 lambda表达式
+
+### 2.1.1 快速入门
+
+lambda表达式是一个匿名函数，函数就相当于Java中的方法
+
+**当方法的参数是接口的时候，就可以考虑使用Lambda表达式**。lambda表达式就是对接口中的抽象方法的重写
+
+(参数列表) -> { 方法体 }
+
+简单示例：
+
+```java
+// 1. 不需要参数,返回值为 5  
+() -> 5  
+  
+// 2. 接收一个参数(数字类型),返回其2倍的值  
+x -> 2 * x  
+  
+// 3. 接受2个参数(数字),并返回他们的差值  
+(x, y) -> x – y  
+  
+// 4. 接收2个int型整数,返回他们的和  
+(int x, int y) -> x + y  
+  
+// 5. 接受一个 string 对象,并在控制台打印,不返回任何值(看起来像是返回void)  
+(String s) -> System.out.print(s)
+```
+
+### 2.1.2 Lambda省略规则
+
+1. 小括号内参数的**类型可以省略**
+2. 如果小括号内有且仅有一个参数，则小括号可以省略
+3. 如果大括号内有且仅有一个语句，可以同时省略大括号、return关键字及语句分号（三个必须同时省略）
+
+
+
+```java
+//匿名内部类（编译后会多生成一个新的类）
+new Thread(new Runnable() {
+    @Override
+    public void run() {
+        System.out.println("匿名内部类");
+    }
+}).start();
+
+//Lambda表达式（编译后会多生成一个方法）
+new Thread(()-> System.out.println("Lambda表达式")).start();
+```
+
+
+
+**总结：**
+
+匿名内部类：在编译后会生成一个名为 类名$1.class 的文件
+
+Lambda：会在程序运行的时候形成一个类，详细步骤如下
+
+1. 在类中新增一个私有的静态方法，Lambda表达式中的代码会被放进这个方法中
+2. 还会生成一个匿名内部类，实现接口，重写抽象方法
+3. 在接口的重写方法中会调用新生成的方法
+
+
+
+### 2.1.3 使用前提
+
+1. 方法的参数或者局部变量类型必须为接口才能使用Lambda
+2. 接口中有且仅有一个抽象方法
+
+
+
+
+
+
+
+## 2.2 stream流
+
+常用方法
+
+```java
+//foreach 遍历输出（最终方法）
+list.stream().forEach(System.out::println);
+
+//coount 统计元素总和（最终方法）
+list.stream().count();
+
+//filter 过滤元素
+list.stream().filter(it -> it.startsWith("张")).collect(Collectors.toList());
+
+//limit 截取前n个元素
+list.stream().limit(3).collect(Collectors.toList());
+
+//skip 跳过前n个元素
+list.stream().skip(3).collect(Collectors.toList());
+
+//map 把一组类型的流转换为另外一组类型（对流中的每个元素进行操作）
+list.stream().map(it->Integer.parseInt(it)).collect(Collectors.toList());    把list中的元素转换为Integer类型
+
+//sorted 将数据进行排序
+list.stream().sort();		根据元素的自然顺序排序
+list.stream().sorted((o1, o2) -> o2 - o1)		根据比较器指定的规则排序
+
+//distinct 去除重复数据
+    //对于自定义结构，需要重写equals和hashcode方法（直接自动生成即可）
+list.stream().distinct().collect(Collectors.toList());
+
+//match 判断元素是否匹配指定的条件，返回布尔值（最终方法）
+	//allMatch:全都要匹配
+	//anyMatch：有一个匹配即可
+	//noneMatch：都不匹配
+boolean flag = list.stream().allMatch(it -> it > 8);
+
+//find 
+
+
+//max 和 min
+
+
+//reduce
+
+
+//map 和 reduce
+
+
+//map ToInt
+
+
+//concat
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+# 三、反射
 
 - 概念：反射，指在运行状态中，对于任意一个类，都能够知道这个类的所有属性和方法，对任意一个对象，都能调用它的任意一个方法。这种动态获取信息，以及动态调用对象方法的功能，叫做java语言的反射机制。
 - 优点：灵活性高。因为反射属于动态编译，即只有到运行时才动态创建 &获取对象实例。
@@ -465,7 +617,7 @@ public class Dog {
 }
 ```
 
-## 2.1 简单获取方法和属性的示例
+## 3.1 简单获取方法和属性的示例
 
 ```java
 public static void main(String[] args) throws Exception {
@@ -488,7 +640,7 @@ public static void main(String[] args) throws Exception {
 
 
 
-## 2.2 获取字节码文件的方式
+## 3.2 获取字节码文件的方式
 
 ```java
 //通过对象获得字节码文件
@@ -502,7 +654,7 @@ Class clz2 = Dog.class
 Class clz3 = Class.forName("com.health.Dog");
 ```
 
-## 2.3 获取方法
+## 3.3 获取方法
 
 ![image-20220117164219180](../../assets/image-20220117164219180.png)
 
@@ -519,7 +671,7 @@ method.invoke(dog,"豆豆")
 
 
 
-## 2.4 获取属性
+## 3.4 获取属性
 
 ![image-20220117164845603](../../assets/image-20220117164845603.png)
 
@@ -535,13 +687,13 @@ Object o = name.get(dog);
 
 
 
-## 2.5 获取实现的接口
+## 3.5 获取实现的接口
 
 ![image-20220117165315978](../../assets/image-20220117165315978.png)
 
 
 
-## 2.6 获取构造函数，创建实例
+## 3.6 获取构造函数，创建实例
 
 ![image-20220117165429223](../../assets/image-20220117165429223.png)
 
@@ -557,7 +709,7 @@ System.out.println(o.getName()+" ： "+o.getDogType());
 
 
 
-## 2.7 获取注解
+## 3.7 获取注解
 
 ```java
 Class clz = Class.forName("com.health.Dog");
@@ -570,7 +722,7 @@ for (Annotation annotation : annotations) {
 
 
 
-## 2.8 Spring中IOC的简单实现原理
+## 3.8 Spring中IOC的简单实现原理
 
 1. Spring 在项目启动的时间通过读取xml中配置的bean的路径
 2. 然后通过Class.forName 读取class 到类加载器
@@ -579,7 +731,7 @@ for (Annotation annotation : annotations) {
 
 建议：自己写下用反射获取xml文件中的类对象，并正常使用
 
-## 2.9 总结
+## 3.9 总结
 
 在使用Java反射机制时，主要步骤包括：
 
@@ -591,7 +743,7 @@ for (Annotation annotation : annotations) {
 
 
 
-# 三、JVM
+# 四、JVM
 
 ![image-20211227171337935](../../assets/image-20211227171337935.png)
 
