@@ -534,13 +534,34 @@ list.stream().distinct().collect(Collectors.toList());
 boolean flag = list.stream().allMatch(it -> it > 8);
 
 //find 
+	//findFirst() 找到第一个元素
+	//findAny() 返回任意一个元素
+Optional<Integer> any = listNum.stream().findAny();
+System.out.println(any.get());
 
+//max 和 min  获取最大和最小值。参数为比较规则
+Optional<Integer> max = listNum.stream().max(Comparator.naturalOrder());
+System.out.println(max.get());
 
-//max 和 min
+Optional<Integer> min = listNum.stream().min((aa,bb)->aa-bb);
+System.out.println(min.get());
 
+//reduce 将数据按照一定的规则归纳为一个数据
+	//参数一：默认值	参数二：对数据进行处理的方式
+	//执行步骤：第一步，将默认值赋值给x，取出集合第一个元素赋值给y
+	//第二步，将上一步的结果赋值给x，去除集合中第二个元素赋值给y
+	//第三步，将上一步的结果赋值给x，去除集合中第二个元素赋值给y
+	//......
+Integer reduce = listNum.stream().reduce(0, (x, y) -> {
+    System.out.println("x= " + x + ", y= " + y);
+    return x + y;
+});
+System.out.println(reduce);	//总数的和
 
-//reduce
-
+Integer reduce1 = listNum.stream().reduce(0, (x, y) -> {	
+    return x > y ? x : y;
+});
+System.out.println(reduce1);	//取最大值
 
 //map 和 reduce
 
