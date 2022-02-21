@@ -316,7 +316,7 @@ export default {
 npm install -g @vue/cli
 
 # 2.切换到要创建项目的目录，使用命令创建项目
-vue create 项目名
+vue create 项目名	//选择vue3
 
 # 3.启动项目（切记要切换到项目目录下再执行命令）
 npm run serve
