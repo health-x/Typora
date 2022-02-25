@@ -764,7 +764,173 @@ for (Annotation annotation : annotations) {
 
 
 
-# 四、JVM
+
+
+# 四、线程
+
+线程和进程、多线程概念 https://www.liaoxuefeng.com/wiki/1252599548343744/1304521607217185
+
+## 4.1 创建线程
+
+Thread
+
+```java
+/**
+ * 线程Thread
+ */
+@Test
+void T1(){
+    //lambda
+    new Thread(()-> System.out.println("111111")).start();
+}
+
+/**
+ * 继承Thread
+ */
+@Test
+void T2(){
+    Thread t = new MyThread();
+    t.start()
+}
+class MyThread extends Thread{
+    @Override
+    public void run() {
+        System.out.println("我是MyThread");
+    }
+}
+```
+
+Runnable
+
+```java
+/**
+ * runnable线程
+ */
+@Test
+void T3(){
+    new Thread(new Runnable() {
+        @Override
+        public void run() {
+            System.out.println("runnable......");
+        }
+    }).start();
+}
+
+/**
+ * 实现runnable接口
+ */
+@Test
+void T4(){
+    Thread t = new Thread(new MyRunnable());
+    t.start();
+}
+class MyRunnable implements Runnable{
+    @Override
+    public void run() {
+        System.out.println("实现Runnable。。。");
+    }
+}
+```
+
+## 4.2 sleep方法
+
+```java
+/**
+ * sleep方法暂停当前线程xx毫秒
+ */
+@Test
+void T5(){
+    System.out.println("主线程：main start...");
+    new Thread(()->{
+        System.out.println("开始：Thread run...");
+        try {
+            Thread.sleep(20);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("结束：Thread end");
+    }).start();
+    try {
+        Thread.sleep(10);
+    }catch (InterruptedException e){}
+    System.out.println("主线程：main end...");
+}
+```
+
+
+
+## 4.3 线程优先级
+
+```java
+/**
+ * 线程设置优先级（优先级高的先执行，但不绝对）
+ */
+@Test
+void T6(){
+    System.out.println("主线程：main start...");
+    Thread t1 = new Thread() {
+        @Override
+        public void run() {
+            System.out.println("开始：Thread run...");
+            try {
+                Thread.sleep(20);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println("结束：Thread end");
+        }
+    };
+    t1.start();
+    t1.setPriority(10);
+    try {
+        Thread.sleep(10);
+    }catch (InterruptedException e){}
+    System.out.println("主线程：main end...");
+}
+```
+
+## 4.4 守护线程
+
+```java
+/**
+ * 守护线程
+ 	  java 中有两种线程 一个是用户线程，一个是守护（Daemon）线程
+       典型的守护线程就是垃圾回收线程，如果进程中没有非守护线程了，则守护线程自动销毁。
+       守护线程作用就是为其他线程的运行提供便利的服务，比如GC。
+ */
+@Test
+void T7(){
+    Thread tt = new Thread();
+    tt.setDaemon(true);     //将该线程设置为守护线程
+}
+```
+
+
+
+## 4.5 线程状态
+
+在Java程序中，一个线程对象只能调用一次`start()`方法启动新线程，并在新线程中执行`run()`方法。一旦`run()`方法执行完毕，线程就结束了。因此，Java线程的状态有以下几种：
+
+- New：新创建的线程，尚未执行；
+- Runnable：运行中的线程，正在执行`run()`方法的Java代码；
+- Blocked：运行中的线程，因为某些操作被阻塞而挂起；
+- Waiting：运行中的线程，因为某些操作在等待中；
+- Timed Waiting：运行中的线程，因为执行`sleep()`方法正在计时等待；
+- Terminated：线程已终止，因为`run()`方法执行完毕。
+
+面试时回答：新建状态New -->  就绪状态Runnable  -->  运行状态Running -->  阻塞状态Blocked -->  死亡状态Dead
+
+
+
+## 4.6 常见方法
+
+
+
+
+
+
+
+# 五、JVM
 
 ![image-20211227171337935](../../assets/image-20211227171337935.png)
 
