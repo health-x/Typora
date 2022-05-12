@@ -25,7 +25,7 @@ https://github.com/alibaba/spring-cloud-alibaba/wiki/%E7%89%88%E6%9C%AC%E8%AF%B4
 
 **EurekaClient（客户端）：**
 
-- 服务提供者：注册自己到EurekaServer，没隔30s发送自己的心跳。
+- 服务提供者：注册自己到EurekaServer，每隔30s发送自己的心跳。
 - 服务消费者：从EurekaServer拉取服务，基于服务列表做负载均衡，挑选一个服务发起远程调用。
 
 ## 
@@ -281,7 +281,7 @@ cloud:
 
 2.在想添加到 env-test 命名空间的服务的yml中添加 discovery.namespace: 命名空间ID 配置，重启服务
 
-```
+```yml
 spring:
   cloud:
     nacos:
@@ -465,7 +465,7 @@ public interface BagClient {
 
 4.测试
 
-修改order-service中的OrderService类中的queryOrderById方法，使用Feign客户端代替RestTemplate：
+修改student-service中的StudentService类中的queryStudentById方法，使用Feign客户端代替RestTemplate：
 
 ```java
 @Autowired
