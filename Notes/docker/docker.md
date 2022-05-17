@@ -642,13 +642,11 @@ docker exec -it nginx01 /bin/bash	# 进入容器
 方式一：
 docker pull tomcat:9.0		# 下载镜像
 docker run -d -p:8888:8080 --name tomcat tomcat:9.0	# 启动运行
-# 此时已经成功了，但访问会显示404
-
+# 此时已经成功了，但访问会显示404，因为镜像是最小镜像，所有不必要的东西都剔除了，只保证最小可运行环境
+# 解决：tomcat容器的话 webapps.dist中有webapps应该有的东西，可以移过去或重命名。
 docker exec -it tomcat9.0 /bin/bash		# 进入tomcat
 
-# 问题：1.linux命令少了 2.webapps里面没有东西
-# 原因：镜像是最小镜像，所有不必要的东西都剔除了，只保证最小可运行环境
-# 解决：tomcat容器的话 webapps.dist中有webapps应该有的东西，可以移过去或重命名
+
 
 方式二：
 docker run -d -p:8080:8080 \
