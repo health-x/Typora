@@ -4,11 +4,11 @@
 
 ###  1. jdk体系结构：
 
-![image-20220313165119729](C:\Users\CloveuLau\AppData\Roaming\Typora\typora-user-images\image-20220313165119729.png)
+![image-20220313165119729](../../assets/image-20220313165119729.png)
 
 ### 2. Java虚拟机
 
-![image-20220313165434771](C:\Users\CloveuLau\AppData\Roaming\Typora\typora-user-images\image-20220313165434771.png)
+![image-20220313165434771](../../assets/image-20220313165434771.png)
 
 ### 3. jvm内存模型 / 运行时数据区
 
@@ -77,7 +77,7 @@ c或者c++写的调用底层东西的方法
 
 堆的内存结构：
 
-![image-20220313231920542](C:\Users\CloveuLau\AppData\Roaming\Typora\typora-user-images\image-20220313231920542.png)
+![image-20220313231920542](../../assets/image-20220313231920542.png)
 
 通过new关键字，创建的对象都会使用堆内存。
 
