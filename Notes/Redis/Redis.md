@@ -17,19 +17,6 @@ usr/local/bin：下的可执行文件可以在任意目录启动（所以非常�
 6. cd  /usr/local/redis/src
 7. make install           安装成功，输入redis-server测试
 
-### redis后台启动设置
-
-```bash
-cd /usr/local/redis		# 在/usr/local/redis下新建etc目录
-mkdir etc
-mv redis.conf  etc		# 将redis.conf文件移动到etc目录下
-vim etc/redis.conf
-
-#修改daemon... 为yes 后台启动，此时可以使用配置文件进行后台启动
-
-redis-server  /usr/local/redis/etc/redis.conf     # 使用配置文件启动
-```
-
 ### redis开机自启
 
 chkconfig --list    查看所有开机自启项
@@ -80,7 +67,7 @@ vim /etc/sysconfig/iptables
 
 
 
-# 第一章：初始redis
+# redis服务与客户端
 
 ### Redis可执行文件说明
 
@@ -88,15 +75,15 @@ vim /etc/sysconfig/iptables
 
 ### 启动redis服务
 
-三种方法启动Redis：默认配置、运行配置、配置文件启动。
+三种方法启动Redis：默认配置启动、自定义配置启动、配置文件启动。
 
 **1）默认配置**
 
 redis-server（前台运行）
 
-**2）运行启动**
+**2）参数启动**
 
-redis-server加上要修改配置名和值（可以是多对），没有设置的配置将使用默认配置：
+redis-server加上配置名和值（可以是多对），没有设置的配置将使用默认配置：
 
 redis-server --configKey1 configValue1 --configKey2 configValue2
 
@@ -109,9 +96,7 @@ ps -ef|grep redis：查看redis服务是否被启动
 
 修改配置文件：vim /usr/local/redis/redis.conf        将配置daemonize no修改为yes
 
-在任意路径执行：redis-server /opt/redis/redis.conf（使用/opt/redis/redis.conf配置文件启动redis）
-
-
+在任意路径执行：redis-server /usr/local/redis/redis.conf（使用/usr/local/redis/redis.conf配置文件启动redis）
 
 <center>Redis的基础配置</center>
 
@@ -129,7 +114,9 @@ redis-cli -h {host} -p 	{port} -a {密码}
 redis-cli -h ip {host} -p {port} {command}  -a 密码（连接别的主机的redis）
 ```
 
-注意：如果没有-h参数，那么默认连接127.0.0.1；如果没有-p，那么默认6379端口
+注意：如果没有-h参数，那么默认连接127.0.0.1；如果没有-p，那么默认6379端口；‘
+
+​			如果没有-a 密码，那么可以在进入客户端后通过>auth 密码 来进行密码验证。
 
 <font color=red>常用：redis-cli，启动的是0号数据库</font>
 
@@ -138,7 +125,8 @@ redis-cli **--**raw        会对中文数据进行UTF-8解码
 ### 停止Redis服务（shutdown）
 
 ```shell
-- redis-cli  shutdown  或者 在redis-cli里面输入shutdown
+- redis-cli -a password shutdown（没设密码则省去-a password）
+- 在redis-cli里面直接输入shutdown
 - kill-9 [UID]  强制杀死redis服务。不会做持久化操作，还会造成缓冲区等资源不能被优雅关闭，极端情况会造成AOF和复制丢失数据的情况。
 - redis-cli shutdown nosave|save       代表是否在关闭Redis前，生成持久化文件
 ```
@@ -149,29 +137,19 @@ redis-cli **--**raw        会对中文数据进行UTF-8解码
 
 #### 1. 永久修改
 
-修改redis.conf设置密码（/usr/local/redis/etc/redis.conf）
-
-<font color=red>提示</font>：*改了开机自启之后配置文件就变成了 /etc/redis/6379.conf 了，改配置的话 就改它*
+修改redis.conf配置文件
 
 \#requirepass foobared。设置密码的方法就是去掉注释的#，把foobared替换成自己的密码即可
 
 登录客户端  redis-cli  -a  密码   -p 6379
+
+<font color=red>提示</font>：*改了开机自启之后配置文件就变成了，改配置的话 就改开机自启的那个配置文件（如：/etc/redis/6379.conf）*
 
 #### 2. 临时修改
 
 进入redis客户端
 
 &gt; config set requirepass 密码
-
-
-
-有了密码之后登录方式：
-
-redis-cli -h {主机名}  -p {端口号}  -a {密码}
-
-或者不输 -a和密码，enter之后再输入：> auth 密码 
-
-
 
 # 第二章：API理解与使用
 
@@ -180,22 +158,53 @@ redis有五种数据类型，它们分别是：string（字符串）、hash（�
 ## 一、全局命令
 
 ```shell
-keys * 	# 查看所有的键（遍历所有键，时间复杂度是O（n））
-dbsize 	#返回键总和（直接获取Redis内置的键总数变量，时间复杂度是O（1））
-exists key	#检查键是否存在（键存在则返回1，不存在则返回0）
-del key [key · · · ]	# 直接删除（返回结果为成功删除键的个数）
-unlink key	# 根据value选择非阻塞删除（真正删除可能会在后续异步操作）
-expire key second		# 键过期（对键添加过期时间，超过过期时间后，会自动删除键）
-ttl key	# 返回键的剩余过期时间，三种返回值如下
-  大于等于0的整数：键剩余的过期时间。
-  -1：键没设置过期时间。
-  -2：键不存在
-type key	# 键的数据结构类型
-object encoding [key]	# 查询内部编码
-setex	# 设置key对应的value的过期时间
-select 库名	# 切换数据库（如select 15）
-flushdb	# 清空当前库
-flushall	# 清空所有库
+# 查看所有的键（遍历所有键，时间复杂度O（n）*通配任意多个字符 ?通配单个字符 []通配括号内的某1个字符，如 keys *name）
+keys * 	
+
+#检查键是否存在（键存在则返回1，不存在则返回0）
+exists key	
+
+# 删除键（返回结果为成功删除键的个数）
+del key [key · · · ]	
+
+#返回键数目总和（直接获取Redis内置的键总数变量，时间复杂度是O（1））
+dbsize 	
+
+# 根据value选择非阻塞删除（真正删除可能会在后续异步操作）
+unlink key
+
+# 设置键过期时间，返回1成功，0失败（已设置过期时间或者key不存在）
+expire key second
+pexpire key 毫秒
+expireat		#自己再查查 
+
+
+# 返回键的剩余过期时间，三种返回值 1.大于等于0的整数：键剩余的过期时间 -1：键没设置过期时间 -2：键不存在
+ttl key	
+
+# 返回键的数据结构类型
+type key
+
+# 返回当前库中任意一个键，若数据库为空，返回空串
+randomkey 
+
+# 重命名键，若newkey存在 将会被覆盖，返回1表示成功，0失败 可能是oldkey不存在或者和newkey相同
+rename oldkey newkey
+
+# 同上，但是newkey存在的话会失败
+renamenx oldkey newkey
+
+# 设置key对应的value的过期时间
+setex
+
+# 切换数据库（如select 15）
+select 库名
+
+# 清空当前库
+flushdb
+
+# 清空所有库
+flushall
 ```
 
 

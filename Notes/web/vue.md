@@ -1,3 +1,65 @@
+# 一、JS回顾
+
+JS中的数据类型包括如下：
+
+- [`Number`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Number)（数字）
+
+- [`String`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/String)（字符串）
+
+- [`Boolean`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Boolean)（布尔）
+
+- [`Symbol`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Symbol)（符号）（ES2015 新增）
+
+- `Object`
+
+  （对象）
+
+  - [`Function`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Function)（函数）
+  - [`Array`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Array)（数组）
+  - [`Date`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/Date)（日期）
+  - [`RegExp`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/RegExp)（正则表达式）
+
+- [`null`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Operators/null)（空）
+
+- [`undefined`](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript/Reference/Global_Objects/undefined)（未定义）
+
+### 1.1、Number（数字）
+
+```shell
+Math
+
+# 第一个参数为字符串或数字，第二个参数
+parseInt(param1,param2);
+
+# 用以解析浮点数字符串,只应用于解析出十进制数字
+parseInt(param1,param2);
+
+# 判断一个变量是否为 NaN
+isNaN()
+
+# 判断一个变量是否是一个有穷数
+isFinite(1/0); // false
+isFinite(Infinity); // false
+isFinite(-Infinity); // false
+isFinite(NaN); // false
+
+// 如果是纯数值类型的检测，则返回 false：
+Number.isFinite("0"); // false
+```
+
+
+
+### 1.2、String（字符串）
+
+```shell
+# 
+"abc".length()
+```
+
+
+
+
+
 # 一、简单vue入门
 
 ## 1. 小示例

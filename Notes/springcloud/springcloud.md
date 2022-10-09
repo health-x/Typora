@@ -8,7 +8,7 @@ spring cloud官方文档：https://spring.io/projects/spring-cloud
 # springboot与springcloud版本对应关系
 https://start.spring.io/actuator/info
 
-# spring cloud alibaba 与 别的的版本对应关系
+# spring cloud alibaba 与 别的版本对应关系
 https://github.com/alibaba/spring-cloud-alibaba/wiki/%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E
 ```
 
@@ -28,7 +28,7 @@ https://github.com/alibaba/spring-cloud-alibaba/wiki/%E7%89%88%E6%9C%AC%E8%AF%B4
 - 服务提供者：注册自己到EurekaServer，每隔30s发送自己的心跳。
 - 服务消费者：从EurekaServer拉取服务，基于服务列表做负载均衡，挑选一个服务发起远程调用。
 
-## 
+
 
 ## 1. 练习：
 
@@ -412,6 +412,27 @@ public String now(){
 ## 3.6 nacos集群搭建
 
 待续......
+
+
+
+## 3.7 nacos配置文件示例
+
+```properties
+# 数据源配置
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.url=jdbc:mysql://139.159.184.216:3306/pdfsite?serverTimezone=Asia/Shanghai&useUnicode=true&characterEncoding=utf-8&zeroDateTimeBehavior=convertToNull&useSSL=false&allowPublicKeyRetrieval=true
+spring.datasource.username=root
+spring.datasource.password=Xhealth0801.
+spring.datasource.max-active=20
+spring.datasource.max-idle=8
+spring.datasource.min-idle=8
+spring.datasource.initial-size=10
+
+#解决字段名与实体类名不一致
+mybatis.configuration.map-underscore-to-camel-case=true
+```
+
+
 
 # 四、Feign
 
