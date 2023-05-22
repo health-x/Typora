@@ -1363,3 +1363,148 @@ const count = ref(对象类型/简单类型数据)
 - ref参数类型支持更好但是必须通过.value访问修改 
 - ref函数的内部实现依赖于reactive函数 
 - 在实际工作中推荐使用ref函数，更加灵活
+
+### computed计算属性函数
+
+只要计算属性发生改变，使用到的地方都会立马变成最新值
+
+使用方式：导入computed函数，执行函数
+
+<img src="../../assets/image-20230522210052956.png" alt="image-20230522210052956" style="zoom:80%;" />
+
+### watch函数
+
+侦听一个或者多个数据的变化，数据变化立马执行回调函数
+
+两个可选参数 
+
+- immediate：在侦听器创建时立即触发回调，响应数据变化后继续回调
+- deep：监听对象或者嵌套属性的时候，默认是浅监听 修改子元素不会触发回调，需要开启deep选项（递归遍历，耗性能）
+
+使用方式：
+
+```vue
+<script setup>
+    import { ref,watch} from 'vue'
+    const count = ref(0)
+    const name = ref('cp')
+    
+    watch(count,(newCount,oldCount)=>{
+        console.log("发生变化啦！")
+    })
+    
+    watch([count,name],([newCount,newName],[oldCount,oldName])=>{
+        console.log("发生变化啦！")
+    })
+    
+    watch(count,(newCount,oldCount)=>{
+        console.log("发生变化啦！")
+    }，{
+          immediate：true / deep：true
+      })
+    
+    //监听对象的某个子元素
+    watch(
+        ()=>对象.子元素
+        ()=>{
+        console.log("发生变化啦！")
+    })
+    
+</script>
+```
+
+### 生命周期函数
+
+<img src="../../assets/image-20230522233113340.png" alt="image-20230522233113340" style="zoom:80%;" />
+
+生命周期函数可以执行多次。多个函数按顺序执行
+
+```js
+onMounted(()=>{
+	console.log("组件挂载完毕1");
+})
+
+onMounted(()=>{
+	console.log("组件挂载完毕2");
+})
+```
+
+
+
+### 父子通信
+
+#### 1. 父传子
+
+父组件
+
+```vue
+<script setup>
+//1 引入子组件
+import SonCom from './components/son-com.vue';
+</script>
+
+<template>
+    <!-- 2 绑定属性，传到子组件 -->
+    <SonCom fatherData="哈哈哈哈"></SonCom>
+</template>
+```
+
+子组件
+
+```vue
+<script setup>
+//3 defineProps 接收父组件传来的数据
+defineProps({
+    fatherData:String
+})
+
+//3 也可以这样接收（可接多个），此时props是个对象
+//const props = defineProps({
+//    fatherData:String
+//})
+</script>
+
+<template>
+    父组件传来的数据：{{ fatherData }}
+</template>
+```
+
+
+
+#### 2. 子传父
+
+父组件
+
+```vue
+<script setup>
+//引入子组件
+import SonCom from './components/SonCom.vue'
+//若子组件传递多个信息，则这里可以增加对应数量的参数
+const getMessage = (msg)=>{
+  console.log(msg)
+}
+</script>
+
+<template>
+    <!-- 绑定自定义事件 -->
+    <HelloWorld @get-message="getMessage"></HelloWorld>
+</template>
+```
+
+子组件
+
+```vue
+<script setup>
+//通过defineEmits编译器宏生成 emit 方法
+const emit = defineEmits(['get-message'])
+const sendMsg = ()=>{
+  //触发自定义事件 并传递参数
+  emit('get-message','这是子组件信息')		//可传多个信息，在后面加 ,'信息2' ,'信息3' 即可
+}
+</script>
+
+<template>
+    <button @click="sendMsg">触发自定义事件</button>
+</template>
+```
+
