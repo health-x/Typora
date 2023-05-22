@@ -406,7 +406,7 @@ ADD demo01-0.0.1-SNAPSHOT.jar app.jar	# 将jar包添加到容器
 CMD java -jar app.jar				   # 定义容器启动执行的命令
 :wq									 # 保存退出
 
-docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建(别往后面的 . 表示dockerfile文件的路径)
+docker build -f ./springboot_dockerfile -t myapp:01 .		# 镜像构建(别忘后面的 . 表示dockerfile文件的路径)
 ```
 
 
@@ -434,8 +434,8 @@ docker build --build-arg JAR_FILE=wgu_server-1.0.jar -t pdfsite:v1.0 .
 # 4.查看镜像是否创建成功
 docker images
 
-# 5.创建容器并启动
-docker run -di --name=pdfsite -p 10086:10086 eureka:v1 
+# 5.创建容器并启动（-name：给容器取名，pdfsite:v1.0 ：镜像名和版本，也可以用镜像ID）
+docker run -di --name=pdfsite -p 10086:10086 pdfsite:v1.0 
 ```
 
 
