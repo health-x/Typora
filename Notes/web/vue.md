@@ -636,3 +636,80 @@ ES6 模块化规范中定义：
 
 
 
+# Vue3
+
+### 创建项目
+
+使用create-vue创建项目要求node版本大于16.0
+
+```bash
+npm init vue@latest		#基于create-vue创建项目
+cd 项目名		#切到项目目录
+npm install		#安装必要依赖
+npm run dev   # 运行项目
+```
+
+### 项目结构
+
+1. vite.config.js - 项目的配置文件 基于vite的配置 
+
+2. package.json - 项目包文件 核心依赖项变成了 Vue3.x 和 vite 
+
+3. main.js - 入口文件 createApp函数创建应用实例 
+
+4. app.vue - 根组件 SFC单文件组件 script - template - style 
+
+   变化一：脚本script和模板template顺序调整 
+
+   变化二：模板template不再要求唯一根元素 
+
+   变化三：脚本script添加setup标识支持组合式API 
+
+5. index.html - 单页入口 提供id为app的挂载点 
+
+### setup方法
+
+执行时机：在beforeCreate()方法之前执行
+
+使用方法：
+
+- 原始写法：写setup函数，在方法中声明变量和方法，紧接着return出去，然后这些方法和变量就可以使用了
+- 语法糖写法：直接在script上加上setup，然后只需要在全局位置声明变量和方法 无需return也可以使用了
+
+<img src="../../assets/image-20230522131556692.png" alt="image-20230522131556692" style="zoom:80%;" />
+
+### reactive和ref函数
+
+reactive()：接收**对象类型**的参数传入并返回一个响应式的对象
+
+```vue
+<script setup>
+//从vue导入reactive函数
+import {reactive} from 'vue'
+//传入对象参数，用state变量接收响应式对象返回值
+const state = reactive(对象类型数据)
+</script>
+
+//使用通过 state.对象类型数据 进行调用
+```
+
+ref()：接收简单类型或者对象类型的参数并返回一个响应式的对象 
+
+```vue
+<script setup>
+//从vue导入ref函数
+import {ref} from 'vue'
+//传入对象/简单类型参数，用state变量接收响应式对象返回值
+const count = ref(对象类型/简单类型数据)
+</script>
+
+//使用通过 count.value 进行调用
+```
+
+区别：
+
+- reactive和ref函数的作用都是用函数调用的方式生成响应式数据 
+- reactive不能处理简单类型的数据 
+- ref参数类型支持更好但是必须通过.value访问修改 
+- ref函数的内部实现依赖于reactive函数 
+- 在实际工作中推荐使用ref函数，更加灵活
